@@ -20,11 +20,12 @@ type SafeAuthUser = Omit<AuthUserRecord, 'passwordHash'>;
 @Injectable()
 export class AuthService {
   private readonly users = new Map<string, AuthUserRecord>();
+  private readonly usersById = new Map<string, AuthUserRecord>();
 
   constructor(private readonly jwtService: JwtService) {}
 
   async register(registerDto: RegisterDto) {
-    const normalizedEmail = registerDto.email.toLowerCase();
+    const normalizedEmail = this.normalizeEmail(registerDto.email);
 
     if (this.users.has(normalizedEmail)) {
       throw new ConflictException('User with this email already exists');
@@ -39,12 +40,13 @@ export class AuthService {
     };
 
     this.users.set(normalizedEmail, user);
+    this.usersById.set(user.id, user);
 
     return this.buildAuthResponse(user);
   }
 
   async login(loginDto: LoginDto) {
-    const normalizedEmail = loginDto.email.toLowerCase();
+    const normalizedEmail = this.normalizeEmail(loginDto.email);
     const user = this.users.get(normalizedEmail);
 
     if (!user) {
@@ -64,13 +66,9 @@ export class AuthService {
   }
 
   findById(userId: string) {
-    for (const user of this.users.values()) {
-      if (user.id === userId) {
-        return this.toSafeUser(user);
-      }
-    }
+    const user = this.usersById.get(userId);
 
-    return undefined;
+    return user ? this.toSafeUser(user) : undefined;
   }
 
   private buildAuthResponse(user: AuthUserRecord) {
@@ -93,5 +91,9 @@ export class AuthService {
       email: user.email,
       name: user.name,
     };
+  }
+
+  private normalizeEmail(email: string) {
+    return email.trim().toLowerCase();
   }
 }

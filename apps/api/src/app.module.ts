@@ -15,9 +15,7 @@ import { HealthModule } from './modules/health/health.module';
           .valid('development', 'test', 'staging', 'production')
           .default('development'),
         API_PORT: Joi.number().port().default(3000),
-        JWT_SECRET: Joi.string()
-          .min(16)
-          .default('replace_with_a_secure_secret'),
+        JWT_SECRET: Joi.string().min(16).required(),
         JWT_EXPIRES_IN: Joi.string().default('7d'),
       }),
     }),

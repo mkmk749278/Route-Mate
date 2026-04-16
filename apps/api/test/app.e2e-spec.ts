@@ -16,8 +16,6 @@ describe('AppController (e2e)', () => {
   };
 
   beforeAll(async () => {
-    process.env.JWT_SECRET = 'test-jwt-secret-123456';
-
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
