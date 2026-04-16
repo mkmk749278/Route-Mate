@@ -86,6 +86,15 @@ The mobile app includes:
 - minimal Material 3 theme setup
 - starter Route Mates home screen
 
+## Android APK CI (GitHub Actions)
+
+Route Mates uses GitHub Actions as the primary Android build path right now.
+
+- Workflow file: `.github/workflows/android-apk.yml`
+- Trigger: `push` and `pull_request` changes related to `apps/mobile`
+- CI steps: `flutter pub get`, `flutter analyze`, `flutter test`, and `flutter build apk --debug`
+- Output: downloadable APK artifact from each workflow run (`route-mates-android-debug-apk`)
+
 ## Environment Setup
 
 Copy `.env.example` to `.env` and update values as needed for local development.
