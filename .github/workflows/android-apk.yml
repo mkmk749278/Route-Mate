@@ -14,6 +14,9 @@ concurrency:
   group: android-apk-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build-android-apk:
     name: Build Android debug APK
