@@ -1,7 +1,7 @@
 # Route Mates MVP Architecture
 
 ## Recommended MVP Stack
-- **Mobile App:** Android (Kotlin, Jetpack Compose)
+- **Mobile App:** Flutter (Android-first for MVP, iOS-ready path later)
 - **Backend API:** Node.js + TypeScript (NestJS or Express-based modular service)
 - **Database:** PostgreSQL
 - **Cache/Queue:** Redis
@@ -10,7 +10,7 @@
 
 ## System Overview
 Route Mates follows a mobile-client + API backend model:
-1. Android app sends authenticated requests to backend APIs.
+1. Flutter mobile app (Android MVP target) sends authenticated requests to backend APIs.
 2. Backend stores users, routes, and matches in PostgreSQL.
 3. Matching service computes route/time overlaps.
 4. Notification service uses Redis jobs and FCM to notify users.
@@ -19,6 +19,7 @@ Route Mates follows a mobile-client + API backend model:
 ## Core Components
 
 ### 1) Mobile App (Android)
+- Flutter implementation targeting Android MVP delivery first
 - Onboarding and profile
 - Route post/edit (recurring + one-time)
 - Match discovery and coordination entry point

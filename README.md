@@ -41,7 +41,7 @@ Route-Mate/
 1. **Foundation & Definition**: Vision alignment, documentation baseline, MVP scope, and operating principles.
 2. **Design & UX**: User flows, low-friction route posting, matching clarity, trust-forward experience.
 3. **Backend MVP**: Authentication, route posting, match logic, notifications, and moderation foundations.
-4. **Android MVP**: Core mobile experience for onboarding, posting routes, viewing matches, and coordinating.
+4. **Android MVP (Flutter)**: Core mobile experience for onboarding, posting routes, viewing matches, and coordinating, built with Flutter for Android-first delivery and easier iOS expansion later.
 5. **Trust, Testing, and Launch**: Safety features, closed beta in Hyderabad corridors, VPS deployment, and iterative public rollout.
 6. **Monetization (Later Phase)**: Premium features and community/organization network models after route density and trust are established.
 
@@ -51,6 +51,7 @@ This repository is currently in the **foundation stage**.
 
 At this stage:
 - Product strategy and architecture are being documented.
+- Planned mobile client direction is Flutter (Android-first MVP, iOS-ready later).
 - Initial engineering direction is being set for MVP execution.
 - Implementation code will be added incrementally after scope and decisions are locked.
 

@@ -8,7 +8,7 @@
 ## Phase 2: Design & UX
 - Create user journeys for onboarding, route posting, and matching
 - Design trust-first UX (verification indicators, reporting access, clear profile signals)
-- Build lightweight Android UI prototypes for feedback
+- Build lightweight Flutter UI prototypes for Android MVP feedback
 
 ## Phase 3: Backend MVP
 - Set up API foundation and authentication
@@ -17,7 +17,7 @@
 - Add notification pipeline and moderation-ready event logging
 
 ## Phase 4: Android App MVP
-- Build Android app core flows:
+- Build Android app core flows using Flutter (Android-first delivery):
   - onboarding and profile
   - create/manage routes
   - view matches

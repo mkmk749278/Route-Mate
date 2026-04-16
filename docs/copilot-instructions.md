@@ -10,6 +10,11 @@ Treat each session as a continuation of the same long-term project unless explic
 - Trust-first route matching strategy
 - MVP execution priorities
 
+If prior decisions are missing or unclear:
+- State assumptions explicitly before proposing implementation
+- Prefer the most practical assumption that keeps MVP momentum
+- Flag decisions that must be confirmed to avoid rework
+
 ## Product Guardrails
 Route Mates is:
 - A route-matching platform for daily city travel
