@@ -32,7 +32,7 @@ services:
       API_PORT: ${API_PORT:-3000}
       DATABASE_URL: ${DATABASE_URL:-postgresql://route_mates:route_mates@postgres:5432/route_mates}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      JWT_SECRET: ${JWT_SECRET:-replace_me}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - '${API_PORT:-3000}:3000'
     depends_on:
