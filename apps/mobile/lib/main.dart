@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'app/app.dart';
+import 'package:route_mates_mobile/app/app.dart';
 
 void main() {
   runApp(const RouteMatesApp());

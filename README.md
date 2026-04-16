@@ -90,6 +90,21 @@ The mobile app includes:
 
 Copy `.env.example` to `.env` and update values as needed for local development.
 
+- Use `localhost` URLs when running API directly on your host (`npm run start:dev`).
+- Use Docker service names (`postgres`, `redis`) when running API inside Docker Compose.
+
+Examples:
+
+```bash
+# host-local API process
+DATABASE_URL=postgresql://route_mates:route_mates@localhost:5432/route_mates
+REDIS_URL=redis://localhost:6379
+
+# API container in docker compose network
+DATABASE_URL=postgresql://route_mates:route_mates@postgres:5432/route_mates
+REDIS_URL=redis://redis:6379
+```
+
 ## Next Stage
 
 Bootstrap is complete; upcoming implementation PRs should cover:

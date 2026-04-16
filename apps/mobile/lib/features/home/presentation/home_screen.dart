@@ -6,9 +6,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Route Mates'),
-      ),
+      appBar: AppBar(title: const Text('Route Mates')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -26,9 +24,7 @@ class HomeScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               const SizedBox(height: 20),
-              const Chip(
-                label: Text('MVP Bootstrap Stage'),
-              ),
+              const Chip(label: Text('MVP Bootstrap Stage')),
             ],
           ),
         ),

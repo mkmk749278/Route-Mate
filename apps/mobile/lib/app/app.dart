@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../features/home/presentation/home_screen.dart';
-import 'theme/app_theme.dart';
+import 'package:route_mates_mobile/app/theme/app_theme.dart';
+import 'package:route_mates_mobile/features/home/presentation/home_screen.dart';
 
 class RouteMatesApp extends StatelessWidget {
   const RouteMatesApp({super.key});
