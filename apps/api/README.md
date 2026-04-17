@@ -10,6 +10,12 @@ NestJS backend foundation for Route Mates MVP.
   - `POST /auth/register`
   - `POST /auth/login`
   - `GET /auth/me` (protected)
+- User profile endpoints for authenticated users:
+  - `GET /users/me` (protected)
+  - `PATCH /users/me` (protected)
+    - updatable fields: `name`, `phone`, `city`, `gender`, `bio`, `avatarUrl`
+    - `gender` accepted values: `male`, `female`, `non_binary`, `prefer_not_to_say`
+    - `isProfileComplete` becomes true when `name`, `city`, and `bio` are all available
 - Base scripts for dev, build, lint, unit tests, and e2e tests
 - Dockerfile for containerized local/dev deployment
 

@@ -76,6 +76,13 @@ Auth endpoints:
 - `POST /auth/login` (email, password)
 - `GET /auth/me` (JWT protected)
 
+Profile endpoints:
+
+- `GET /users/me` (JWT protected)
+- `PATCH /users/me` (JWT protected)
+  - accepted fields: `name`, `phone`, `city`, `gender` (`male` | `female` | `non_binary` | `prefer_not_to_say`), `bio`, `avatarUrl`
+  - profile completion is persisted as `isProfileComplete` and is set when `name`, `city`, and `bio` are all present
+
 ## Mobile (Flutter) — `apps/mobile`
 
 1. Ensure Flutter SDK is installed and available in PATH.
