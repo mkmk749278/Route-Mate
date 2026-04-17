@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:route_mates_mobile/app/app.dart';
 import 'package:route_mates_mobile/core/api/route_mates_api.dart';
@@ -16,8 +17,8 @@ void main() {
     await controller.initialize();
     await tester.pumpWidget(RouteMatesApp(controller: controller));
 
-    expect(find.text('Login'), findsOneWidget);
-    expect(find.text('Register'), findsOneWidget);
+    expect(find.widgetWithText(Tab, 'Login'), findsOneWidget);
+    expect(find.widgetWithText(Tab, 'Register'), findsOneWidget);
   });
 
   testWidgets('shows dashboard tabs when token session restores', (tester) async {
