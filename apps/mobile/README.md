@@ -1,17 +1,40 @@
-# route_mates_mobile
+# Route Mates Mobile (Flutter)
 
-A new Flutter project.
+Android-first MVP app integrated with backend APIs for:
 
-## Getting Started
+- auth (`/auth/register`, `/auth/login`, `/auth/me`)
+- profile (`/users/me` GET/PATCH)
+- route posting (`/routes`, `/routes/me`)
+- route discovery (`/routes/discover`)
 
-This project is a starting point for a Flutter application.
+## Run locally
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+cd apps/mobile
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## API base URL notes
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The app reads backend URL from Dart define `API_BASE_URL`.
+
+- Android emulator to host machine API: `http://10.0.2.2:3000`
+- iOS simulator to host machine API: `http://localhost:3000`
+- Physical device: use your machine LAN IP, e.g. `http://192.168.1.20:3000`
+
+Example:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3000
+```
+
+## MVP flow
+
+1. Launch app
+2. Login/register if unauthenticated
+3. If authenticated, use dashboard tabs for:
+   - Profile view/update
+   - Create Route post
+   - Discover routes with optional filters
+4. Logout from app bar
