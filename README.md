@@ -87,6 +87,10 @@ Route post endpoints:
 
 - `POST /routes` (JWT protected)
 - `GET /routes/me` (JWT protected, only current user's route posts)
+- `GET /routes/discover` (JWT protected, only route posts from other users)
+  - optional query filters: `origin`, `destination` (case-insensitive contains), `travelDate` (ISO-8601 date/datetime for same UTC day)
+  - deterministic sort: `travelDate` ascending, then `createdAt` descending
+  - includes route listing fields plus limited owner info for mobile browse cards: `owner.id`, `owner.name`, `owner.city`, `owner.avatarUrl`
   - create payload: `origin`, `destination`, `travelDate` (ISO-8601), `preferredDepartureTime` (`HH:mm`), optional `seatCount`, optional `notes`
   - response includes route post metadata (`id`, `userId`, `status`, `createdAt`, `updatedAt`)
 
