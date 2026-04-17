@@ -23,7 +23,7 @@ Route-Mate/
 └── README.md
 ```
 
-## Local Dependencies (PostgreSQL + Redis)
+## Local Dependencies (PostgreSQL + optional Redis)
 
 From repository root:
 
@@ -72,7 +72,10 @@ npm run prisma:migrate:dev
 npm run prisma:migrate:deploy
 ```
 
-The API reads environment variables via `@nestjs/config` and validates key bootstrap settings (`APP_ENV`, `API_PORT`, `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`).
+The API reads environment variables via `@nestjs/config` and validates key bootstrap settings (`APP_ENV`, `API_PORT`, `CORS_ORIGIN`, `DATABASE_URL`, optional `REDIS_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`).
+
+Production deployment assets and VPS runbook are available in `deploy/` (`deploy/README.md`).
+Detailed deployment checklist: `docs/deployment-vps.md`.
 
 Auth endpoints:
 
@@ -182,12 +185,19 @@ Route Mates uses GitHub Actions as the primary Android build path right now.
 - CI steps: `flutter pub get`, `flutter analyze`, `flutter test`, and `flutter build apk --debug`
 - Output: downloadable APK artifact from each workflow run (`route-mates-android-debug-apk`)
 
+## Backend API CI (GitHub Actions)
+
+- Workflow file: `.github/workflows/api-ci.yml`
+- Trigger: `push` and `pull_request` changes related to `apps/api`
+- CI steps: `npm ci`, `npm run lint`, `npm run test`, `npm run build`
+
 ## Environment Setup
 
 Copy `.env.example` to `.env` and update values as needed for local development.
 
 - Use `localhost` URLs when running API directly on your host (`npm run start:dev`).
 - Use Docker service names (`postgres`, `redis`) when running API inside Docker Compose.
+- `REDIS_URL` is optional for the current MVP runtime and is reserved for post-MVP queue/cache use.
 
 Examples:
 
