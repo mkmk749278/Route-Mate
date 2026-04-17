@@ -19,7 +19,9 @@ import { PrismaModule } from './prisma/prisma.module';
           .valid('development', 'test', 'staging', 'production')
           .default('development'),
         API_PORT: Joi.number().port().default(3000),
+        CORS_ORIGIN: Joi.string().allow('').default(''),
         DATABASE_URL: Joi.string().uri().required(),
+        REDIS_URL: Joi.string().uri().optional(),
         JWT_SECRET: Joi.string().min(16).required(),
         JWT_EXPIRES_IN: Joi.string().default('7d'),
       }),

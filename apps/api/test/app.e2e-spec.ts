@@ -151,6 +151,7 @@ describe('AppController (e2e)', () => {
     })
       .overrideProvider(PrismaService)
       .useValue({
+        $queryRaw: () => Promise.resolve([{ '?column?': 1 }]),
         user: {
           findUnique: (params: {
             where: { id?: string; email?: string };

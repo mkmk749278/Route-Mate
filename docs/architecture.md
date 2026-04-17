@@ -4,7 +4,7 @@
 - **Mobile App:** Flutter (Android-first for MVP, iOS-ready path later)
 - **Backend API:** Node.js + TypeScript (NestJS or Express-based modular service)
 - **Database:** PostgreSQL
-- **Cache/Queue:** Redis
+- **Cache/Queue:** Redis (post-MVP; not required in current deployed MVP baseline)
 - **Notifications:** Firebase Cloud Messaging (FCM)
 - **Deployment:** VPS with Docker + Docker Compose, Nginx reverse proxy
 
@@ -13,7 +13,7 @@ Route Mates follows a mobile-client + API backend model:
 1. Flutter mobile app (Android MVP target) sends authenticated requests to backend APIs.
 2. Backend stores users, routes, and matches in PostgreSQL.
 3. Matching service computes route/time overlaps.
-4. Notification service uses Redis jobs and FCM to notify users.
+4. Notification service uses Redis jobs and FCM to notify users (planned post-MVP).
 5. Nginx fronts API containers with TLS and routing on VPS.
 
 ## Core Components
@@ -36,8 +36,9 @@ Route Mates follows a mobile-client + API backend model:
 - Indexed geospatial/time-window query support (incremental)
 
 ### 4) Redis
-- Short-lived cache for hot queries
-- Queue backbone for notifications and asynchronous tasks
+- Planned for short-lived cache for hot queries
+- Planned queue backbone for notifications and asynchronous tasks
+- Not currently required for first deployed MVP baseline
 
 ### 5) Notifications
 - Push notifications through FCM for:
