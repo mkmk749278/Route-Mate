@@ -17,6 +17,7 @@ class IncomingRequestsTab extends StatefulWidget {
 
 class _IncomingRequestsTabState extends State<IncomingRequestsTab> {
   bool _loading = false;
+  String? _submittingInterestId;
 
   @override
   void initState() {
@@ -48,6 +49,9 @@ class _IncomingRequestsTabState extends State<IncomingRequestsTab> {
 
   Future<void> _ownerDecision(RouteInterest interest, String status) async {
     try {
+      setState(() {
+        _submittingInterestId = interest.id;
+      });
       await widget.controller.ownerDecisionRouteInterest(
         routeInterestId: interest.id,
         status: status,
@@ -65,6 +69,12 @@ class _IncomingRequestsTabState extends State<IncomingRequestsTab> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _submittingInterestId = null;
+        });
+      }
     }
   }
 
@@ -133,14 +143,22 @@ class _IncomingRequestsTabState extends State<IncomingRequestsTab> {
                           Chip(label: Text(interest.status.toUpperCase())),
                           if (interest.status == 'pending')
                             FilledButton(
-                              onPressed: widget.controller.isSubmitting
+                              onPressed: _submittingInterestId != null
                                   ? null
                                   : () => _ownerDecision(interest, 'accepted'),
-                              child: const Text('Accept'),
+                              child: _submittingInterestId == interest.id
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Accept'),
                             ),
                           if (interest.status == 'pending')
                             OutlinedButton(
-                              onPressed: widget.controller.isSubmitting
+                              onPressed: _submittingInterestId != null
                                   ? null
                                   : () => _ownerDecision(interest, 'rejected'),
                               child: const Text('Reject'),

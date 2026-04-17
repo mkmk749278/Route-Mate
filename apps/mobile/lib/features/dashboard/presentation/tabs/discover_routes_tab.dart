@@ -137,8 +137,15 @@ class _DiscoverRoutesTabState extends State<DiscoverRoutesTab> {
             ),
             const Divider(height: 1),
             Expanded(
-              child: widget.controller.discoveredRoutes.isEmpty
-                  ? const Center(child: Text('No routes found'))
+              child: _loading && widget.controller.discoveredRoutes.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : widget.controller.discoveredRoutes.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No routes found.\nTry changing filters and search again.',
+                        textAlign: TextAlign.center,
+                      ),
+                    )
                   : ListView.builder(
                       itemCount: widget.controller.discoveredRoutes.length,
                       itemBuilder: (context, index) {

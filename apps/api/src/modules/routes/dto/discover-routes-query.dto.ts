@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsISO8601,
   IsOptional,
@@ -7,8 +8,12 @@ import {
   MinLength,
 } from 'class-validator';
 
+const trimString = (value: unknown) =>
+  typeof value === 'string' ? value.trim() : value;
+
 export class DiscoverRoutesQueryDto {
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) => trimString(value))
   @IsString()
   @MinLength(1)
   @MaxLength(160)
@@ -16,6 +21,7 @@ export class DiscoverRoutesQueryDto {
   origin?: string;
 
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) => trimString(value))
   @IsString()
   @MinLength(1)
   @MaxLength(160)

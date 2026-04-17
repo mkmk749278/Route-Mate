@@ -71,6 +71,18 @@ curl "http://localhost:3000/routes/discover?origin=miyapur&destination=hitec&tra
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
+Route interest quick check:
+
+```bash
+curl -X POST http://localhost:3000/route-interests \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -d '{"routePostId":"<ROUTE_POST_ID>"}'
+
+curl http://localhost:3000/route-interests/outgoing \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
 ## Scripts
 
 ```bash
