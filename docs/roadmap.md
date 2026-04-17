@@ -176,11 +176,10 @@ Make the MVP deployable on a VPS and operationally usable in a live environment.
 - release and restart process
 
 ### PRs
-- **No PR yet**
-- this should be the **next major PR**
+- **PR #13** — *Phase 8 MVP deployment readiness: VPS scaffolding, API CI, migration wiring, and backend hardening*
 
 ### Status
-**Not started / current priority**
+**Completed**
 
 ---
 
@@ -195,10 +194,10 @@ Validate the deployed system in a real environment.
 - confirm logs, persistence, and restart behavior
 
 ### PRs
-- likely **1 small stabilization PR after first live deployment**, if needed
+- **Current PR target** — production smoke-test support, runbook docs, backup/restore docs, and small operational safeguards
 
 ### Status
-**Pending after deployment readiness**
+**Current priority**
 
 ---
 
@@ -238,6 +237,7 @@ Only after the first deployed MVP is stable.
 10. **PR #10** — route interest/request flow  
 11. **PR #11** — MVP polish/release readiness  
 12. **PR #12** — MVP readiness report docs  
+13. **PR #13** — deployment readiness (VPS assets, API CI, migration/runtime hardening)  
 
 ---
 
@@ -274,40 +274,38 @@ The key change is that this roadmap now distinguishes between:
 - route interest flow
 - MVP hardening
 - readiness reporting
+- deployment readiness
 
 ## What is true right now
 Route Mates is:
 
-**locally MVP-complete**
+**deployed-MVP-ready**
 
 but not yet:
 
-**deployed-MVP-complete**
+**production-validated**
 
-because deployment/ops work is still missing.
+because first live smoke validation and early operations confidence steps are now the next focus.
 
 ---
 
 # What the next roadmap item should be
 
 ## Next PR
-A deployment-readiness PR covering:
-- production compose or deployment manifests
-- Nginx config template
-- migration wiring
-- backend CI workflow
-- health/CORS hardening
-- deployment docs
-- Redis keep/remove decision
+A production-validation PR covering:
+- in-repo smoke-test checklist for real MVP flow
+- first-deployment verification runbook + log inspection basics
+- rollback basics for single-VPS MVP
+- PostgreSQL backup/restore baseline docs
+- small backend safety safeguard(s) with minimal scope
 
 ## After that
 Manual VPS work:
 - provision VPS
 - DNS / firewall / TLS
 - secrets
-- DB backup strategy
-- first deployment
-- production smoke test
+- scheduled backup automation and restore drills
+- first production validation run with two real test users
 
 ---
 
@@ -315,6 +313,6 @@ Manual VPS work:
 If you ask "where are we on the roadmap?" the honest answer is:
 
 - **Phases 0–7:** done
-- **Phase 8:** next and required
-- **Phase 9:** immediate follow-up after deployment
+- **Phase 8:** done
+- **Phase 9:** current priority
 - **Phase 10:** later, optional until MVP is truly live

@@ -55,3 +55,9 @@ Use your preferred TLS setup on the VPS after confirming HTTP deployment:
 - direct certificate mounts into Nginx container
 
 Keep certificates and private keys outside the repository.
+
+## Production validation + ops docs
+
+- Smoke test checklist: `docs/production-validation-smoke-test.md`
+- Operations runbook: `docs/operations-runbook.md`
+- PostgreSQL backup/restore: `docs/postgresql-backup-restore.md`

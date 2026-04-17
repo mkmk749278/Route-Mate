@@ -24,6 +24,8 @@ NestJS backend foundation for Route Mates MVP.
       - `origin` (case-insensitive contains match)
       - `destination` (case-insensitive contains match)
       - `travelDate` (ISO-8601 date/datetime; filters to that UTC date)
+      - `limit` (integer, default `20`, max `50`)
+      - `offset` (integer, default `0`, max `1000`)
     - ordered by `travelDate` ascending, then `createdAt` descending
     - response includes route fields for browse cards and limited owner profile info: `owner.id`, `owner.name`, `owner.city`, `owner.avatarUrl`
     - create payload fields:
@@ -68,6 +70,9 @@ curl -X POST http://localhost:3000/routes \
   -d '{"origin":"Kukatpally","destination":"Gachibowli","travelDate":"2026-05-02T00:00:00.000Z","preferredDepartureTime":"09:30","seatCount":2,"notes":"Can start +/- 15 mins"}'
 
 curl "http://localhost:3000/routes/discover?origin=miyapur&destination=hitec&travelDate=2026-06-12" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+
+curl "http://localhost:3000/routes/discover?travelDate=2026-06-12&limit=20&offset=0" \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
