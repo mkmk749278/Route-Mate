@@ -29,9 +29,23 @@ describe('AppController (e2e)', () => {
       name: string;
     };
   };
+  type MockRoutePost = {
+    id: string;
+    userId: string;
+    origin: string;
+    destination: string;
+    travelDate: Date;
+    preferredDepartureTime: string;
+    seatCount: number | null;
+    notes: string | null;
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
 
   beforeAll(async () => {
     const users = new Map<string, MockUser>();
+    const routePosts = new Map<string, MockRoutePost>();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -122,6 +136,71 @@ describe('AppController (e2e)', () => {
             }
 
             return Promise.resolve(updated);
+          },
+        },
+        routePost: {
+          create: (params: {
+            data: {
+              userId: string;
+              origin: string;
+              destination: string;
+              travelDate: Date;
+              preferredDepartureTime: string;
+              seatCount?: number;
+              notes?: string;
+            };
+            select?: Record<string, boolean>;
+          }) => {
+            const now = new Date();
+            const created: MockRoutePost = {
+              id: crypto.randomUUID(),
+              userId: params.data.userId,
+              origin: params.data.origin,
+              destination: params.data.destination,
+              travelDate: params.data.travelDate,
+              preferredDepartureTime: params.data.preferredDepartureTime,
+              seatCount: params.data.seatCount ?? null,
+              notes: params.data.notes ?? null,
+              status: 'active',
+              createdAt: now,
+              updatedAt: now,
+            };
+            routePosts.set(created.id, created);
+
+            if (params.select) {
+              return Promise.resolve(
+                Object.fromEntries(
+                  Object.keys(params.select).map((key) => [
+                    key,
+                    created[key as keyof MockRoutePost],
+                  ]),
+                ),
+              );
+            }
+
+            return Promise.resolve(created);
+          },
+          findMany: (params: {
+            where: { userId: string };
+            select?: Record<string, boolean>;
+          }) => {
+            const filtered = Array.from(routePosts.values())
+              .filter((route) => route.userId === params.where.userId)
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+            if (params.select) {
+              return Promise.resolve(
+                filtered.map((route) =>
+                  Object.fromEntries(
+                    Object.keys(params.select as Record<string, boolean>).map(
+                      (key) => [key, route[key as keyof MockRoutePost]],
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return Promise.resolve(filtered);
           },
         },
       })
@@ -286,6 +365,119 @@ describe('AppController (e2e)', () => {
       .set('Authorization', `Bearer ${authBody.accessToken}`)
       .send({
         gender: 'invalid',
+      })
+      .expect(400);
+  });
+
+  it('routes flow: create route -> list my routes only', async () => {
+    const riderRegister = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        email: 'routes-rider@example.com',
+        name: 'Routes Rider',
+        password: 'StrongPass123',
+      })
+      .expect(201);
+    const riderAuth = riderRegister.body as AuthResponse;
+
+    const otherRegister = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        email: 'routes-other@example.com',
+        name: 'Routes Other',
+        password: 'StrongPass123',
+      })
+      .expect(201);
+    const otherAuth = otherRegister.body as AuthResponse;
+
+    await request(app.getHttpServer())
+      .post('/routes')
+      .set('Authorization', `Bearer ${otherAuth.accessToken}`)
+      .send({
+        origin: 'Miyapur',
+        destination: 'HITEC City',
+        travelDate: '2026-05-01T00:00:00.000Z',
+        preferredDepartureTime: '08:15',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/routes')
+      .set('Authorization', `Bearer ${riderAuth.accessToken}`)
+      .send({
+        origin: 'Kukatpally',
+        destination: 'Gachibowli',
+        travelDate: '2026-05-02T00:00:00.000Z',
+        preferredDepartureTime: '09:30',
+        seatCount: 2,
+        notes: 'Can start +/- 15 mins',
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        const createBody = body as {
+          route?: {
+            origin?: string;
+            destination?: string;
+            status?: string;
+            seatCount?: number | null;
+          };
+        };
+        expect(createBody.route?.origin).toBe('Kukatpally');
+        expect(createBody.route?.destination).toBe('Gachibowli');
+        expect(createBody.route?.status).toBe('active');
+        expect(createBody.route?.seatCount).toBe(2);
+      });
+
+    await request(app.getHttpServer())
+      .get('/routes/me')
+      .set('Authorization', `Bearer ${riderAuth.accessToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        const meRoutesBody = body as {
+          routes?: Array<{ origin?: string; destination?: string }>;
+        };
+        expect(meRoutesBody.routes).toHaveLength(1);
+        expect(meRoutesBody.routes?.[0]?.origin).toBe('Kukatpally');
+        expect(meRoutesBody.routes?.[0]?.destination).toBe('Gachibowli');
+      });
+  });
+
+  it('rejects /routes without token', async () => {
+    await request(app.getHttpServer())
+      .post('/routes')
+      .send({
+        origin: 'Ameerpet',
+        destination: 'Madhapur',
+        travelDate: '2026-05-03T00:00:00.000Z',
+        preferredDepartureTime: '10:00',
+      })
+      .expect(401);
+  });
+
+  it('rejects /routes/me without token', async () => {
+    await request(app.getHttpServer()).get('/routes/me').expect(401);
+  });
+
+  it('rejects invalid /routes payload', async () => {
+    const registerResponse = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        email: 'routes-invalid@example.com',
+        name: 'Routes Invalid',
+        password: 'StrongPass123',
+      })
+      .expect(201);
+    const authBody = registerResponse.body as AuthResponse;
+
+    await request(app.getHttpServer())
+      .post('/routes')
+      .set('Authorization', `Bearer ${authBody.accessToken}`)
+      .send({
+        origin: '',
+        destination: 'Madhapur',
+        travelDate: 'not-a-date',
+        preferredDepartureTime: '9AM',
+        seatCount: 0,
       })
       .expect(400);
   });
