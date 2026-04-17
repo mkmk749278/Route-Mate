@@ -6,7 +6,7 @@ NestJS backend foundation for Route Mates MVP.
 
 - Global config bootstrap via `@nestjs/config` + Joi validation
 - Health endpoint: `GET /health`
-- Auth foundation with JWT:
+- Auth foundation with JWT + persisted users in PostgreSQL:
   - `POST /auth/register`
   - `POST /auth/login`
   - `GET /auth/me` (protected)
@@ -17,6 +17,8 @@ NestJS backend foundation for Route Mates MVP.
 
 ```bash
 npm install
+npm run prisma:generate
+npm run prisma:migrate:dev
 npm run start:dev
 ```
 
@@ -42,4 +44,7 @@ npm run build
 npm run lint
 npm run test
 npm run test:e2e
+npm run prisma:generate
+npm run prisma:migrate:dev
+npm run prisma:migrate:deploy
 ```

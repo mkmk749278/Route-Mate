@@ -1,11 +1,52 @@
 import { JwtModule } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
+import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
   let service: AuthService;
+  const users = new Map<
+    string,
+    { id: string; email: string; name: string; passwordHash: string }
+  >();
+  const prismaMock = {
+    user: {
+      findUnique: jest.fn(
+        (params: { where: { id?: string; email?: string } }) => {
+          if (params.where.id) {
+            return Promise.resolve(
+              Array.from(users.values()).find(
+                (candidate) => candidate.id === params.where.id,
+              ) ?? null,
+            );
+          }
+
+          if (!params.where.email) {
+            return Promise.resolve(null);
+          }
+
+          return Promise.resolve(users.get(params.where.email) ?? null);
+        },
+      ),
+      create: jest.fn(
+        (params: {
+          data: { email: string; name: string; passwordHash: string };
+        }) => {
+          const created = {
+            id: crypto.randomUUID(),
+            ...params.data,
+          };
+          users.set(created.email, created);
+          return Promise.resolve(created);
+        },
+      ),
+    },
+  };
 
   beforeEach(async () => {
+    users.clear();
+    jest.clearAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         JwtModule.register({
@@ -13,7 +54,13 @@ describe('AuthService', () => {
           signOptions: { expiresIn: '1h' },
         }),
       ],
-      providers: [AuthService],
+      providers: [
+        AuthService,
+        {
+          provide: PrismaService,
+          useValue: prismaMock,
+        },
+      ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);

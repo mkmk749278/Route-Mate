@@ -45,6 +45,8 @@ npm install
 2. Start in dev mode:
 
 ```bash
+npm run prisma:generate
+npm run prisma:migrate:dev
 npm run start:dev
 ```
 
@@ -61,9 +63,12 @@ npm run build
 npm run lint
 npm run test
 npm run test:e2e
+npm run prisma:generate
+npm run prisma:migrate:dev
+npm run prisma:migrate:deploy
 ```
 
-The API reads environment variables via `@nestjs/config` and validates key bootstrap settings (`APP_ENV`, `API_PORT`, `JWT_SECRET`, `JWT_EXPIRES_IN`).
+The API reads environment variables via `@nestjs/config` and validates key bootstrap settings (`APP_ENV`, `API_PORT`, `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`).
 
 Auth endpoints:
 
