@@ -20,7 +20,7 @@ Set secure values in `deploy/.env.vps`:
 
 - `DB_PASSWORD`
 - `JWT_SECRET`
-- `CORS_ORIGIN` (for example `https://api.example.com`)
+- `CORS_ORIGIN` (for example `https://api.example.com`, or comma-separated origins if needed)
 
 ## 2) Start production stack
 

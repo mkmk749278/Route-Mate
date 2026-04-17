@@ -14,19 +14,19 @@ async function bootstrap() {
     }),
   );
   const configService = app.get(ConfigService);
-  const allowedCorsOrigins =
-    configService
-      .get<string>('CORS_ORIGIN', '')
-      .split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean) ?? [];
+  const allowedCorsOrigins = configService
+    .get<string>('CORS_ORIGIN', '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
   app.enableCors({
     origin: allowedCorsOrigins.length > 0 ? allowedCorsOrigins : true,
   });
 
-  app.use((_: Request, res: Response, next: NextFunction) => {
+  app.use((_req: Request, res: Response, next: NextFunction) => {
     res.removeHeader('X-Powered-By');
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
