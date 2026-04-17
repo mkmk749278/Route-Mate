@@ -163,7 +163,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   },
                 ),
                 DropdownButtonFormField<String>(
-                  value: _gender,
+                  initialValue: _gender,
                   decoration: const InputDecoration(labelText: 'Gender'),
                   items: const [
                     DropdownMenuItem(value: 'male', child: Text('Male')),
