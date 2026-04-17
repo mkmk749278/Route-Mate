@@ -1,11 +1,8 @@
-import { Transform } from 'class-transformer';
 import { IsEmail, IsString, MinLength } from 'class-validator';
-
-const trimString = (value: unknown) =>
-  typeof value === 'string' ? value.trim() : value;
+import { TrimString } from '../../shared/decorators/trim-string.decorator';
 
 export class LoginDto {
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @IsEmail()
   email!: string;
 

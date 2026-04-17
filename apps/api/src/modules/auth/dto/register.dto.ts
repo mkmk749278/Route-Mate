@@ -1,4 +1,3 @@
-import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsString,
@@ -6,16 +5,14 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-
-const trimString = (value: unknown) =>
-  typeof value === 'string' ? value.trim() : value;
+import { TrimString } from '../../shared/decorators/trim-string.decorator';
 
 export class RegisterDto {
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @IsEmail()
   email!: string;
 
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @IsString()
   @MinLength(2)
   @MaxLength(80)

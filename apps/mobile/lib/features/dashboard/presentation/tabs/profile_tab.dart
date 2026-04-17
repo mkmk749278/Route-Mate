@@ -54,7 +54,7 @@ class _ProfileTabState extends State<ProfileTab> {
     } catch (error) {
       if (mounted) {
         setState(() {
-          _profileLoadError = error.toString();
+          _profileLoadError = 'Failed to load profile. Please try again.';
         });
       }
     } finally {
@@ -164,7 +164,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   Text(_profileLoadError!),
                   const SizedBox(height: 12),
                   OutlinedButton(
-                    onPressed: _loadingProfile ? null : _loadProfile,
+                    onPressed: _loadProfile,
                     child: const Text('Retry'),
                   ),
                 ],

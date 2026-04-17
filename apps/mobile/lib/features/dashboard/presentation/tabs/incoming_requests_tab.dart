@@ -143,7 +143,7 @@ class _IncomingRequestsTabState extends State<IncomingRequestsTab> {
                           Chip(label: Text(interest.status.toUpperCase())),
                           if (interest.status == 'pending')
                             FilledButton(
-                              onPressed: _submittingInterestId != null
+                              onPressed: _submittingInterestId == interest.id
                                   ? null
                                   : () => _ownerDecision(interest, 'accepted'),
                               child: _submittingInterestId == interest.id
@@ -158,7 +158,7 @@ class _IncomingRequestsTabState extends State<IncomingRequestsTab> {
                             ),
                           if (interest.status == 'pending')
                             OutlinedButton(
-                              onPressed: _submittingInterestId != null
+                              onPressed: _submittingInterestId == interest.id
                                   ? null
                                   : () => _ownerDecision(interest, 'rejected'),
                               child: const Text('Reject'),

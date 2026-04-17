@@ -1,4 +1,3 @@
-import { Transform } from 'class-transformer';
 import {
   IsIn,
   IsOptional,
@@ -8,14 +7,13 @@ import {
   Matches,
   MinLength,
 } from 'class-validator';
+import { TrimString } from '../../shared/decorators/trim-string.decorator';
 
 const GENDER_VALUES = ['male', 'female', 'non_binary', 'prefer_not_to_say'];
-const trimString = (value: unknown) =>
-  typeof value === 'string' ? value.trim() : value;
 
 export class UpdateMeDto {
   @IsOptional()
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @IsString()
   @MinLength(2)
   @MaxLength(80)
@@ -23,12 +21,12 @@ export class UpdateMeDto {
   name?: string;
 
   @IsOptional()
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @Matches(/^\+?[1-9]\d{7,14}$/)
   phone?: string;
 
   @IsOptional()
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @IsString()
   @MinLength(2)
   @MaxLength(100)
@@ -40,13 +38,13 @@ export class UpdateMeDto {
   gender?: string;
 
   @IsOptional()
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @IsString()
   @MaxLength(240)
   bio?: string;
 
   @IsOptional()
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @IsUrl()
   @MaxLength(2048)
   avatarUrl?: string;

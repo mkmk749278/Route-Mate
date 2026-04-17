@@ -1,4 +1,3 @@
-import { Transform } from 'class-transformer';
 import {
   IsInt,
   IsISO8601,
@@ -9,19 +8,17 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-
-const trimString = (value: unknown) =>
-  typeof value === 'string' ? value.trim() : value;
+import { TrimString } from '../../shared/decorators/trim-string.decorator';
 
 export class CreateRouteDto {
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @IsString()
   @MinLength(2)
   @MaxLength(160)
   @Matches(/\S/)
   origin!: string;
 
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @IsString()
   @MinLength(2)
   @MaxLength(160)
@@ -31,7 +28,7 @@ export class CreateRouteDto {
   @IsISO8601()
   travelDate!: string;
 
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
   preferredDepartureTime!: string;
 
@@ -41,7 +38,7 @@ export class CreateRouteDto {
   seatCount?: number;
 
   @IsOptional()
-  @Transform(({ value }: { value: unknown }) => trimString(value))
+  @TrimString()
   @IsString()
   @MaxLength(500)
   notes?: string;

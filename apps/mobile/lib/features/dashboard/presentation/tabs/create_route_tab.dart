@@ -52,7 +52,7 @@ class _CreateRouteTabState extends State<CreateRouteTab> {
     } catch (error) {
       if (mounted) {
         setState(() {
-          _myRoutesLoadError = error.toString();
+          _myRoutesLoadError = 'Failed to load routes. Please try again.';
         });
       }
     } finally {
@@ -272,7 +272,7 @@ class _CreateRouteTabState extends State<CreateRouteTab> {
                     Text(_myRoutesLoadError!),
                     const SizedBox(height: 8),
                     OutlinedButton(
-                      onPressed: _loadingMyRoutes ? null : _loadMyRoutes,
+                      onPressed: _loadMyRoutes,
                       child: const Text('Retry'),
                     ),
                   ],

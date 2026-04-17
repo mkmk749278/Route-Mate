@@ -162,7 +162,7 @@ flutter pub get
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
 
-If using a physical device, replace `10.0.2.2` with your host LAN IP (for example `192.168.1.20`).
+If using a physical device, replace `10.0.2.2` with your host LAN IP (e.g., `192.168.1.20`).
 
 ## Demo walkthrough (no seed platform required)
 
