@@ -19,6 +19,13 @@ NestJS backend foundation for Route Mates MVP.
 - Route post endpoints for authenticated users:
   - `POST /routes` (protected)
   - `GET /routes/me` (protected, only current user's route posts)
+  - `GET /routes/discover` (protected, returns route posts from other users)
+    - supported query filters (all optional):
+      - `origin` (case-insensitive contains match)
+      - `destination` (case-insensitive contains match)
+      - `travelDate` (ISO-8601 date/datetime; filters to that UTC date)
+    - ordered by `travelDate` ascending, then `createdAt` descending
+    - response includes route fields for browse cards and limited owner profile info: `owner.id`, `owner.name`, `owner.city`, `owner.avatarUrl`
     - create payload fields:
       - `origin` (string)
       - `destination` (string)
@@ -59,6 +66,9 @@ curl -X POST http://localhost:3000/routes \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <JWT_TOKEN>" \
   -d '{"origin":"Kukatpally","destination":"Gachibowli","travelDate":"2026-05-02T00:00:00.000Z","preferredDepartureTime":"09:30","seatCount":2,"notes":"Can start +/- 15 mins"}'
+
+curl "http://localhost:3000/routes/discover?origin=miyapur&destination=hitec&travelDate=2026-06-12" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ## Scripts
