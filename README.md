@@ -74,7 +74,7 @@ npm run prisma:migrate:deploy
 
 The API reads environment variables via `@nestjs/config` and validates key bootstrap settings (`APP_ENV`, `API_PORT`, `CORS_ORIGIN`, `DATABASE_URL`, optional `REDIS_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`).
 
-Production deployment assets and VPS runbook are available in `deploy/` (`deploy/README.md`).
+Production deployment assets and VPS runbook are available in `deploy/` (`deploy/README.md`), including one-command deploy via `./deploy/deploy-vps.sh`.
 Detailed deployment checklist: `docs/deployment-vps.md`.
 Production validation checklist: `docs/production-validation-smoke-test.md`.
 Operations runbook: `docs/operations-runbook.md`.
