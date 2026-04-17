@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { PrismaService } from './../src/prisma/prisma.service';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
@@ -16,9 +17,59 @@ describe('AppController (e2e)', () => {
   };
 
   beforeAll(async () => {
+    const users = new Map<
+      string,
+      { id: string; email: string; name: string; passwordHash: string }
+    >();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(PrismaService)
+      .useValue({
+        user: {
+          findUnique: (params: {
+            where: { id?: string; email?: string };
+            select?: { id: true; email: true; name: true };
+          }) => {
+            if (params.where.id) {
+              const userById = Array.from(users.values()).find(
+                (candidate) => candidate.id === params.where.id,
+              );
+
+              if (!userById) {
+                return Promise.resolve(null);
+              }
+
+              if (params.select) {
+                return Promise.resolve({
+                  id: userById.id,
+                  email: userById.email,
+                  name: userById.name,
+                });
+              }
+
+              return Promise.resolve(userById);
+            }
+
+            if (!params.where.email) {
+              return Promise.resolve(null);
+            }
+
+            return Promise.resolve(users.get(params.where.email) ?? null);
+          },
+          create: (params: {
+            data: { email: string; name: string; passwordHash: string };
+          }) => {
+            const created = {
+              id: crypto.randomUUID(),
+              ...params.data,
+            };
+            users.set(created.email, created);
+            return Promise.resolve(created);
+          },
+        },
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
