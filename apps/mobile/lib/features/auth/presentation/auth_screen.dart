@@ -243,11 +243,7 @@ class _AuthFormScaffold extends StatelessWidget {
             ...fields,
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: isSubmitting
-                  ? null
-                  : () {
-                      onSubmit();
-                    },
+              onPressed: isSubmitting ? null : onSubmit,
               child: isSubmitting
                   ? const SizedBox(
                       width: 20,

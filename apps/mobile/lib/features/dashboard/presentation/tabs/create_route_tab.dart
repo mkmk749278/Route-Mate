@@ -213,11 +213,7 @@ class _CreateRouteTabState extends State<CreateRouteTab> {
                     ),
                     const SizedBox(height: 16),
                     FilledButton(
-                      onPressed: widget.controller.isSubmitting
-                          ? null
-                          : () {
-                              _submit();
-                            },
+                      onPressed: widget.controller.isSubmitting ? null : _submit,
                       child: widget.controller.isSubmitting
                           ? const SizedBox(
                               width: 20,

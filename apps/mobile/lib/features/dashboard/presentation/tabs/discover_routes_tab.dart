@@ -120,11 +120,7 @@ class _DiscoverRoutesTabState extends State<DiscoverRoutesTab> {
                           child: const Text('Clear date'),
                         ),
                       FilledButton(
-                        onPressed: _loading
-                            ? null
-                            : () {
-                                _search();
-                              },
+                        onPressed: _loading ? null : _search,
                         child: _loading
                             ? const SizedBox(
                                 width: 20,

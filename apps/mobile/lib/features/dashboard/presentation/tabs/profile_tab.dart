@@ -59,6 +59,11 @@ class _ProfileTabState extends State<ProfileTab> {
       return;
     }
 
+    final current = widget.controller.profile;
+    if (current == null) {
+      return;
+    }
+
     final payload = <String, dynamic>{};
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
@@ -78,7 +83,9 @@ class _ProfileTabState extends State<ProfileTab> {
     if (_gender != null && _gender!.isNotEmpty) {
       payload['gender'] = _gender;
     }
-    payload['bio'] = bio;
+    if (bio != (current.bio ?? '')) {
+      payload['bio'] = bio;
+    }
     if (avatarUrl.isNotEmpty) {
       payload['avatarUrl'] = avatarUrl;
     }
@@ -159,15 +166,15 @@ class _ProfileTabState extends State<ProfileTab> {
                   value: _gender,
                   decoration: const InputDecoration(labelText: 'Gender'),
                   items: const [
-                    DropdownMenuItem(value: 'male', child: Text('male')),
-                    DropdownMenuItem(value: 'female', child: Text('female')),
+                    DropdownMenuItem(value: 'male', child: Text('Male')),
+                    DropdownMenuItem(value: 'female', child: Text('Female')),
                     DropdownMenuItem(
                       value: 'non_binary',
-                      child: Text('non_binary'),
+                      child: Text('Non-binary'),
                     ),
                     DropdownMenuItem(
                       value: 'prefer_not_to_say',
-                      child: Text('prefer_not_to_say'),
+                      child: Text('Prefer not to say'),
                     ),
                   ],
                   onChanged: (value) {
