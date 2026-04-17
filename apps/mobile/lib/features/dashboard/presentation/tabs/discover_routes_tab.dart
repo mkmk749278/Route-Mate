@@ -160,6 +160,8 @@ class _DiscoverRoutesTabState extends State<DiscoverRoutesTab> {
                               onPressed: _submittingRouteId != null
                                   ? null
                                   : () async {
+                                      final messenger =
+                                          ScaffoldMessenger.of(context);
                                       setState(() {
                                         _submittingRouteId = route.id;
                                       });
@@ -170,24 +172,22 @@ class _DiscoverRoutesTabState extends State<DiscoverRoutesTab> {
                                         if (!mounted) {
                                           return;
                                         }
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'Interest request sent',
-                                                ),
-                                              ),
-                                            );
+                                        messenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Interest request sent',
+                                            ),
+                                          ),
+                                        );
                                       } catch (error) {
                                         if (!mounted) {
                                           return;
                                         }
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                              SnackBar(
-                                                content: Text(error.toString()),
-                                              ),
-                                            );
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(error.toString()),
+                                          ),
+                                        );
                                       } finally {
                                         if (mounted) {
                                           setState(() {
