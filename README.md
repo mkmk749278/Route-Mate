@@ -104,16 +104,21 @@ cd apps/mobile
 flutter pub get
 ```
 
-3. Run on Android emulator/device:
+3. Run on Android emulator/device (with configurable backend URL):
 
 ```bash
-flutter run
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
 
 The mobile app includes:
-- a clean `lib/app` + `lib/features` structure for MVP growth
-- minimal Material 3 theme setup
-- starter Route Mates home screen
+- lightweight API client + service integration for auth/profile/routes
+- persisted auth token restore on app startup
+- MVP dashboard tabs for profile update, route posting, and route discovery
+
+`API_BASE_URL` notes:
+- Android emulator -> host API: `http://10.0.2.2:3000`
+- iOS simulator -> host API: `http://localhost:3000`
+- physical device -> use your machine LAN IP, e.g. `http://192.168.1.20:3000`
 
 ## Android APK CI (GitHub Actions)
 
@@ -145,7 +150,6 @@ REDIS_URL=redis://redis:6379
 
 ## Next Stage
 
-Bootstrap is complete; upcoming implementation PRs should cover:
-- mobile integration for auth/profile/routes
-- route matching flows
+Current implemented MVP slice includes backend + mobile integration for auth/profile/route posting/discovery. Upcoming implementation PRs should cover:
+- route matching quality and ranking flows
 - notifications and downstream ride coordination
