@@ -81,7 +81,11 @@ export class AuthService {
   }
 
   private buildAuthResponse(user: Pick<User, 'id' | 'email' | 'name'>) {
-    const safeUser = this.toSafeUser(user);
+    const safeUser: SafeAuthUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    };
     const accessToken = this.jwtService.sign({
       sub: safeUser.id,
       email: safeUser.email,
@@ -91,14 +95,6 @@ export class AuthService {
     return {
       accessToken,
       user: safeUser,
-    };
-  }
-
-  private toSafeUser(user: Pick<User, 'id' | 'email' | 'name'>): SafeAuthUser {
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
     };
   }
 
