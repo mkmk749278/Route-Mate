@@ -6,6 +6,7 @@ Android-first MVP app integrated with backend APIs for:
 - profile (`/users/me` GET/PATCH)
 - route posting (`/routes`, `/routes/me`)
 - route discovery (`/routes/discover`)
+- route interests (`/route-interests`, `/route-interests/incoming`, `/route-interests/outgoing`)
 
 ## Run locally
 
@@ -36,5 +37,7 @@ flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3000
 3. If authenticated, use dashboard tabs for:
    - Profile view/update
    - Create Route post
-   - Discover routes with optional filters
+   - Discover routes with optional filters + interest request action
+   - Outgoing request status tracking
+   - Incoming request review with accept/reject actions
 4. Logout from app bar

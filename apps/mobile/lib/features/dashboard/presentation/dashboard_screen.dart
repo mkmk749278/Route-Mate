@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:route_mates_mobile/features/dashboard/presentation/tabs/create_route_tab.dart';
 import 'package:route_mates_mobile/features/dashboard/presentation/tabs/discover_routes_tab.dart';
+import 'package:route_mates_mobile/features/dashboard/presentation/tabs/incoming_requests_tab.dart';
+import 'package:route_mates_mobile/features/dashboard/presentation/tabs/outgoing_requests_tab.dart';
 import 'package:route_mates_mobile/features/dashboard/presentation/tabs/profile_tab.dart';
 import 'package:route_mates_mobile/features/shared/state/app_controller.dart';
 
@@ -15,15 +17,15 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Route Mates'),
           actions: [
             IconButton(
               onPressed: () {
-              controller.logout();
-            },
+                controller.logout();
+              },
               icon: const Icon(Icons.logout),
               tooltip: 'Logout',
             ),
@@ -33,6 +35,8 @@ class DashboardScreen extends StatelessWidget {
               Tab(text: 'Profile'),
               Tab(text: 'Create Route'),
               Tab(text: 'Discover'),
+              Tab(text: 'Outgoing'),
+              Tab(text: 'Incoming'),
             ],
           ),
         ),
@@ -41,6 +45,8 @@ class DashboardScreen extends StatelessWidget {
             ProfileTab(controller: controller),
             CreateRouteTab(controller: controller),
             DiscoverRoutesTab(controller: controller),
+            OutgoingRequestsTab(controller: controller),
+            IncomingRequestsTab(controller: controller),
           ],
         ),
       ),

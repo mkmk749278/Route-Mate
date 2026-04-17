@@ -94,6 +94,16 @@ Route post endpoints:
   - create payload: `origin`, `destination`, `travelDate` (ISO-8601), `preferredDepartureTime` (`HH:mm`), optional `seatCount`, optional `notes`
   - response includes route post metadata (`id`, `userId`, `status`, `createdAt`, `updatedAt`)
 
+Route interest endpoints:
+
+- `POST /route-interests` (JWT protected) with payload `{ routePostId }`
+  - rejects requesting your own route post
+  - rejects duplicate active requests (`pending` / `accepted`) for the same requester + route post
+- `GET /route-interests/incoming` (JWT protected, only current owner's incoming requests)
+- `GET /route-interests/outgoing` (JWT protected, only current requester's outgoing requests)
+- `PATCH /route-interests/:routeInterestId/owner-decision` (JWT protected, owner only) with payload `{ status: "accepted" | "rejected" }`
+- responses keep profile exposure limited (`id`, `name`, `city`, `avatarUrl`), with phone shown only to the counterparty after acceptance
+
 ## Mobile (Flutter) — `apps/mobile`
 
 1. Ensure Flutter SDK is installed and available in PATH.
@@ -111,9 +121,9 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
 
 The mobile app includes:
-- lightweight API client + service integration for auth/profile/routes
+- lightweight API client + service integration for auth/profile/routes/route-interests
 - persisted auth token restore on app startup
-- MVP dashboard tabs for profile update, route posting, and route discovery
+- MVP dashboard tabs for profile update, route posting, route discovery, outgoing requests, and incoming requests
 
 `API_BASE_URL` notes:
 - Android emulator -> host API: `http://10.0.2.2:3000`
