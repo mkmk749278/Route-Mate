@@ -16,6 +16,8 @@ flutter pub get
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
 
+Backend API is expected at port `3000`. See `/apps/api/README.md` for backend startup steps.
+
 ## API base URL notes
 
 The app reads backend URL from Dart define `API_BASE_URL`.
@@ -41,3 +43,11 @@ flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3000
    - Outgoing request status tracking
    - Incoming request review with accept/reject actions
 4. Logout from app bar
+
+## Quick demo flow
+
+For a fast demo, use two users:
+1. User A posts a route in **Create Route**.
+2. User B finds it in **Discover** and taps **Interested**.
+3. User A reviews and accepts in **Incoming**.
+4. User B confirms accepted status in **Outgoing**.

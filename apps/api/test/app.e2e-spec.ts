@@ -616,6 +616,17 @@ describe('AppController (e2e)', () => {
       .expect(400);
   });
 
+  it('rejects register payload with whitespace-only name', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        email: 'whitespace-name@example.com',
+        name: '   ',
+        password: 'StrongPass123',
+      })
+      .expect(400);
+  });
+
   it('rejects /auth/me without token', async () => {
     await request(app.getHttpServer()).get('/auth/me').expect(401);
   });
@@ -742,10 +753,10 @@ describe('AppController (e2e)', () => {
       .post('/routes')
       .set('Authorization', `Bearer ${riderAuth.accessToken}`)
       .send({
-        origin: 'Kukatpally',
-        destination: 'Gachibowli',
+        origin: '  Kukatpally  ',
+        destination: '  Gachibowli  ',
         travelDate: '2026-05-02T00:00:00.000Z',
-        preferredDepartureTime: '09:30',
+        preferredDepartureTime: ' 09:30 ',
         seatCount: 2,
         notes: 'Can start +/- 15 mins',
       })

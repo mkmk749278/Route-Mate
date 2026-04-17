@@ -87,6 +87,86 @@ class _DiscoverRoutesTabState extends State<DiscoverRoutesTab> {
     return AnimatedBuilder(
       animation: widget.controller,
       builder: (context, _) {
+        Widget listContent;
+        if (_loading && widget.controller.discoveredRoutes.isEmpty) {
+          listContent = const Center(child: CircularProgressIndicator());
+        } else if (widget.controller.discoveredRoutes.isEmpty) {
+          listContent = const Center(
+            child: Text(
+              'No routes found.\nTry changing filters and search again.',
+              textAlign: TextAlign.center,
+            ),
+          );
+        } else {
+          listContent = ListView.builder(
+            itemCount: widget.controller.discoveredRoutes.length,
+            itemBuilder: (context, index) {
+              final route = widget.controller.discoveredRoutes[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                child: ListTile(
+                  title: Text('${route.origin} → ${route.destination}'),
+                  subtitle: Text(
+                    '${DateFormat('yyyy-MM-dd').format(route.travelDate)} • '
+                    '${route.preferredDepartureTime}\n'
+                    'By ${route.owner.name}${route.owner.city == null ? '' : ' • ${route.owner.city}'}',
+                  ),
+                  isThreeLine: true,
+                  trailing: FilledButton(
+                    onPressed: _submittingRouteId != null
+                        ? null
+                        : () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            setState(() {
+                              _submittingRouteId = route.id;
+                            });
+
+                            try {
+                              await widget.controller.createRouteInterest(
+                                route.id,
+                              );
+                              if (!mounted) {
+                                return;
+                              }
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Interest request sent'),
+                                ),
+                              );
+                            } catch (error) {
+                              if (!mounted) {
+                                return;
+                              }
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(error.toString()),
+                                ),
+                              );
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  _submittingRouteId = null;
+                                });
+                              }
+                            }
+                          },
+                    child: _submittingRouteId == route.id
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Interested'),
+                  ),
+                ),
+              );
+            },
+          );
+        }
+
         return Column(
           children: [
             Padding(
@@ -137,79 +217,7 @@ class _DiscoverRoutesTabState extends State<DiscoverRoutesTab> {
             ),
             const Divider(height: 1),
             Expanded(
-              child: widget.controller.discoveredRoutes.isEmpty
-                  ? const Center(child: Text('No routes found'))
-                  : ListView.builder(
-                      itemCount: widget.controller.discoveredRoutes.length,
-                      itemBuilder: (context, index) {
-                        final route = widget.controller.discoveredRoutes[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          child: ListTile(
-                            title: Text('${route.origin} → ${route.destination}'),
-                            subtitle: Text(
-                              '${DateFormat('yyyy-MM-dd').format(route.travelDate)} • '
-                              '${route.preferredDepartureTime}\n'
-                              'By ${route.owner.name}${route.owner.city == null ? '' : ' • ${route.owner.city}'}',
-                            ),
-                            isThreeLine: true,
-                            trailing: FilledButton(
-                              onPressed: _submittingRouteId != null
-                                  ? null
-                                  : () async {
-                                      final messenger =
-                                          ScaffoldMessenger.of(context);
-                                      setState(() {
-                                        _submittingRouteId = route.id;
-                                      });
-
-                                      try {
-                                        await widget.controller
-                                            .createRouteInterest(route.id);
-                                        if (!mounted) {
-                                          return;
-                                        }
-                                        messenger.showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Interest request sent',
-                                            ),
-                                          ),
-                                        );
-                                      } catch (error) {
-                                        if (!mounted) {
-                                          return;
-                                        }
-                                        messenger.showSnackBar(
-                                          SnackBar(
-                                            content: Text(error.toString()),
-                                          ),
-                                        );
-                                      } finally {
-                                        if (mounted) {
-                                          setState(() {
-                                            _submittingRouteId = null;
-                                          });
-                                        }
-                                      }
-                                    },
-                              child: _submittingRouteId == route.id
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text('Interested'),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+              child: listContent,
             ),
           ],
         );

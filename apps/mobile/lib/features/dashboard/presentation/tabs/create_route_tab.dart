@@ -22,11 +22,14 @@ class _CreateRouteTabState extends State<CreateRouteTab> {
   final _notesController = TextEditingController();
   DateTime? _travelDate;
   TimeOfDay? _departureTime;
+  bool _loadingMyRoutes = false;
+  String? _myRoutesLoadError;
+  bool _isSubmittingRoute = false;
 
   @override
   void initState() {
     super.initState();
-    widget.controller.fetchMyRoutes();
+    _loadMyRoutes();
   }
 
   @override
@@ -36,6 +39,29 @@ class _CreateRouteTabState extends State<CreateRouteTab> {
     _seatCountController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMyRoutes() async {
+    setState(() {
+      _loadingMyRoutes = true;
+      _myRoutesLoadError = null;
+    });
+
+    try {
+      await widget.controller.fetchMyRoutes();
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _myRoutesLoadError = 'Failed to load routes. Please try again.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingMyRoutes = false;
+        });
+      }
+    }
   }
 
   Future<void> _pickDate() async {
@@ -102,6 +128,9 @@ class _CreateRouteTabState extends State<CreateRouteTab> {
     }
 
     try {
+      setState(() {
+        _isSubmittingRoute = true;
+      });
       await widget.controller.createRoute(payload);
       if (!mounted) {
         return;
@@ -127,6 +156,12 @@ class _CreateRouteTabState extends State<CreateRouteTab> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingRoute = false;
+        });
+      }
     }
   }
 
@@ -213,8 +248,8 @@ class _CreateRouteTabState extends State<CreateRouteTab> {
                     ),
                     const SizedBox(height: 16),
                     FilledButton(
-                      onPressed: widget.controller.isSubmitting ? null : _submit,
-                      child: widget.controller.isSubmitting
+                      onPressed: _isSubmittingRoute ? null : _submit,
+                      child: _isSubmittingRoute
                           ? const SizedBox(
                               width: 20,
                               height: 20,
@@ -228,7 +263,21 @@ class _CreateRouteTabState extends State<CreateRouteTab> {
               const SizedBox(height: 24),
               Text('My routes', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
-              if (widget.controller.myRoutes.isEmpty)
+              if (_loadingMyRoutes)
+                const Center(child: CircularProgressIndicator())
+              else if (_myRoutesLoadError != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_myRoutesLoadError!),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: _loadMyRoutes,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                )
+              else if (widget.controller.myRoutes.isEmpty)
                 const Text('No routes posted yet')
               else
                 ...widget.controller.myRoutes.map(

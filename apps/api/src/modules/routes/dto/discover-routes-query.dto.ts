@@ -6,9 +6,11 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { TrimString } from '../../shared/decorators/trim-string.decorator';
 
 export class DiscoverRoutesQueryDto {
   @IsOptional()
+  @TrimString()
   @IsString()
   @MinLength(1)
   @MaxLength(160)
@@ -16,6 +18,7 @@ export class DiscoverRoutesQueryDto {
   origin?: string;
 
   @IsOptional()
+  @TrimString()
   @IsString()
   @MinLength(1)
   @MaxLength(160)

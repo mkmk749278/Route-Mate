@@ -2,7 +2,11 @@
 
 Route Mates is a Hyderabad-first route-matching platform for daily city travel.
 
-This repository is now in **implementation stage**: the backend and mobile foundations are scaffolded, with core auth/profile/route posting APIs in place for upcoming matching and coordination features.
+This repository is in MVP implementation stage with backend + mobile flows for:
+- auth/session
+- profile update
+- route posting + route discovery
+- route interest request, incoming review, and outgoing tracking
 
 ## Repository Structure
 
@@ -130,6 +134,45 @@ The mobile app includes:
 - iOS simulator -> host API: `http://localhost:3000`
 - physical device -> use your machine LAN IP, e.g. `http://192.168.1.20:3000`
 
+## Quick local run (API + Mobile)
+
+From repository root:
+
+1. Start dependencies:
+
+```bash
+docker compose up -d postgres redis
+```
+
+2. Start backend:
+
+```bash
+cd apps/api
+npm install
+npm run prisma:generate
+npm run prisma:migrate:dev
+npm run start:dev
+```
+
+3. In another terminal, run mobile:
+
+```bash
+cd apps/mobile
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
+```
+
+If using a physical device, replace `10.0.2.2` with your host LAN IP (e.g., `192.168.1.20`).
+
+## Demo walkthrough (no seed platform required)
+
+Use two accounts and two devices/emulators (or one app + API calls):
+
+1. User A registers and posts a route.
+2. User B registers, opens Discover, and taps **Interested** on User A route.
+3. User A opens **Incoming** tab and accepts the request.
+4. User B opens **Outgoing** tab and sees accepted status (with contact visibility for accepted requests).
+
 ## Android APK CI (GitHub Actions)
 
 Route Mates uses GitHub Actions as the primary Android build path right now.
@@ -160,6 +203,4 @@ REDIS_URL=redis://redis:6379
 
 ## Next Stage
 
-Current implemented MVP slice includes backend + mobile integration for auth/profile/route posting/discovery. Upcoming implementation PRs should cover:
-- route matching quality and ranking flows
-- notifications and downstream ride coordination
+Post-MVP iterations can focus on advanced matching quality, notifications, and richer coordination features.

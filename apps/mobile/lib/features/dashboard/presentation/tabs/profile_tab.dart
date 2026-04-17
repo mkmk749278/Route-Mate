@@ -23,11 +23,14 @@ class _ProfileTabState extends State<ProfileTab> {
   final _avatarUrlController = TextEditingController();
   String? _gender;
   String? _boundProfileId;
+  bool _loadingProfile = false;
+  String? _profileLoadError;
+  bool _isSavingProfile = false;
 
   @override
   void initState() {
     super.initState();
-    widget.controller.fetchProfile();
+    _loadProfile();
   }
 
   @override
@@ -38,6 +41,29 @@ class _ProfileTabState extends State<ProfileTab> {
     _bioController.dispose();
     _avatarUrlController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      _loadingProfile = true;
+      _profileLoadError = null;
+    });
+
+    try {
+      await widget.controller.fetchProfile();
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _profileLoadError = 'Failed to load profile. Please try again.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingProfile = false;
+        });
+      }
+    }
   }
 
   void _bindProfile(UserProfile profile) {
@@ -91,6 +117,9 @@ class _ProfileTabState extends State<ProfileTab> {
     }
 
     try {
+      setState(() {
+        _isSavingProfile = true;
+      });
       await widget.controller.updateProfile(payload);
       if (!mounted) {
         return;
@@ -105,6 +134,12 @@ class _ProfileTabState extends State<ProfileTab> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingProfile = false;
+        });
+      }
     }
   }
 
@@ -115,8 +150,36 @@ class _ProfileTabState extends State<ProfileTab> {
       builder: (context, _) {
         final profile = widget.controller.profile;
 
-        if (profile == null) {
+        if (_loadingProfile) {
           return const Center(child: CircularProgressIndicator());
+        }
+
+        if (_profileLoadError != null) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_profileLoadError!),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _loadProfile,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (profile == null) {
+          return Center(
+            child: OutlinedButton(
+              onPressed: _loadProfile,
+              child: const Text('Load profile'),
+            ),
+          );
         }
 
         _bindProfile(profile);
@@ -194,8 +257,8 @@ class _ProfileTabState extends State<ProfileTab> {
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: widget.controller.isSubmitting ? null : _submit,
-                  child: widget.controller.isSubmitting
+                  onPressed: _isSavingProfile ? null : _submit,
+                  child: _isSavingProfile
                       ? const SizedBox(
                           width: 20,
                           height: 20,
