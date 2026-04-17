@@ -629,7 +629,8 @@ describe('AppController (e2e)', () => {
         (route) => route.userId !== requesterAuth.user.id,
       ),
     ).toBe(true);
-    expect(discoverBody.routes?.[0]?.owner?.name).toBeTruthy();
+    expect(discoverBody.routes?.[0]?.owner?.name).toBe('Discover Owner Two');
+    expect(discoverBody.routes?.[1]?.owner?.name).toBe('Discover Owner One');
 
     await request(app.getHttpServer())
       .get('/routes/discover')

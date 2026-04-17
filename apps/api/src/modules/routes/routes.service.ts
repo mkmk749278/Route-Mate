@@ -65,14 +65,20 @@ export class RoutesService {
     };
 
     if (query.origin) {
-      where.origin = { contains: query.origin.trim(), mode: 'insensitive' };
+      const origin = query.origin.trim();
+      if (origin) {
+        where.origin = { contains: origin, mode: 'insensitive' };
+      }
     }
 
     if (query.destination) {
-      where.destination = {
-        contains: query.destination.trim(),
-        mode: 'insensitive',
-      };
+      const destination = query.destination.trim();
+      if (destination) {
+        where.destination = {
+          contains: destination,
+          mode: 'insensitive',
+        };
+      }
     }
 
     if (query.travelDate) {
@@ -116,19 +122,9 @@ export class RoutesService {
     });
 
     return {
-      routes: routes.map((route) => ({
-        id: route.id,
-        userId: route.userId,
-        origin: route.origin,
-        destination: route.destination,
-        travelDate: route.travelDate,
-        preferredDepartureTime: route.preferredDepartureTime,
-        seatCount: route.seatCount,
-        notes: route.notes,
-        status: route.status,
-        createdAt: route.createdAt,
-        updatedAt: route.updatedAt,
-        owner: route.user,
+      routes: routes.map(({ user, ...route }) => ({
+        ...route,
+        owner: user,
       })),
     };
   }
