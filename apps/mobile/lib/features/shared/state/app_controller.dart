@@ -18,6 +18,8 @@ class AppController extends ChangeNotifier {
   UserProfile? _profile;
   List<RoutePost> _myRoutes = const <RoutePost>[];
   List<DiscoveredRoute> _discoveredRoutes = const <DiscoveredRoute>[];
+  List<RouteInterest> _incomingInterests = const <RouteInterest>[];
+  List<RouteInterest> _outgoingInterests = const <RouteInterest>[];
   bool _isRestoringSession = true;
   bool _isSubmitting = false;
 
@@ -28,6 +30,8 @@ class AppController extends ChangeNotifier {
   UserProfile? get profile => _profile;
   List<RoutePost> get myRoutes => _myRoutes;
   List<DiscoveredRoute> get discoveredRoutes => _discoveredRoutes;
+  List<RouteInterest> get incomingInterests => _incomingInterests;
+  List<RouteInterest> get outgoingInterests => _outgoingInterests;
 
   Future<void> initialize() async {
     _isRestoringSession = true;
@@ -89,6 +93,8 @@ class AppController extends ChangeNotifier {
     _profile = null;
     _myRoutes = const <RoutePost>[];
     _discoveredRoutes = const <DiscoveredRoute>[];
+    _incomingInterests = const <RouteInterest>[];
+    _outgoingInterests = const <RouteInterest>[];
     await _tokenStorage.clearToken();
     notifyListeners();
   }
@@ -129,6 +135,41 @@ class AppController extends ChangeNotifier {
       travelDate: travelDate,
     );
     notifyListeners();
+  }
+
+  Future<void> createRouteInterest(String routePostId) async {
+    await _runSubmitting(() async {
+      final interest = await _api.createRouteInterest(routePostId: routePostId);
+      _outgoingInterests = <RouteInterest>[interest, ..._outgoingInterests];
+    });
+  }
+
+  Future<void> fetchIncomingInterests() async {
+    _incomingInterests = await _api.getIncomingRouteInterests();
+    notifyListeners();
+  }
+
+  Future<void> fetchOutgoingInterests() async {
+    _outgoingInterests = await _api.getOutgoingRouteInterests();
+    notifyListeners();
+  }
+
+  Future<void> ownerDecisionRouteInterest({
+    required String routeInterestId,
+    required String status,
+  }) async {
+    await _runSubmitting(() async {
+      final updated = await _api.ownerDecisionRouteInterest(
+        routeInterestId: routeInterestId,
+        status: status,
+      );
+      _incomingInterests = _incomingInterests
+          .map((interest) => interest.id == updated.id ? updated : interest)
+          .toList(growable: false);
+      _outgoingInterests = _outgoingInterests
+          .map((interest) => interest.id == updated.id ? updated : interest)
+          .toList(growable: false);
+    });
   }
 
   Future<void> _setSession(AuthSession session) async {

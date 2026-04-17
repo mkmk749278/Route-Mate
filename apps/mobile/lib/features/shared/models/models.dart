@@ -165,3 +165,102 @@ class DiscoveredRoute extends RoutePost {
     );
   }
 }
+
+class RouteInterestRouteSummary {
+  const RouteInterestRouteSummary({
+    required this.id,
+    required this.origin,
+    required this.destination,
+    required this.travelDate,
+    required this.preferredDepartureTime,
+  });
+
+  final String id;
+  final String origin;
+  final String destination;
+  final DateTime travelDate;
+  final String preferredDepartureTime;
+
+  factory RouteInterestRouteSummary.fromJson(Map<String, dynamic> json) {
+    return RouteInterestRouteSummary(
+      id: json['id'] as String,
+      origin: json['origin'] as String,
+      destination: json['destination'] as String,
+      travelDate: DateTime.parse(json['travelDate'] as String),
+      preferredDepartureTime: json['preferredDepartureTime'] as String,
+    );
+  }
+}
+
+class RouteInterestUserSummary {
+  const RouteInterestUserSummary({
+    required this.id,
+    required this.name,
+    this.city,
+    this.avatarUrl,
+    this.phone,
+  });
+
+  final String id;
+  final String name;
+  final String? city;
+  final String? avatarUrl;
+  final String? phone;
+
+  factory RouteInterestUserSummary.fromJson(Map<String, dynamic> json) {
+    return RouteInterestUserSummary(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      city: json['city'] as String?,
+      avatarUrl: json['avatarUrl'] as String?,
+      phone: json['phone'] as String?,
+    );
+  }
+}
+
+class RouteInterest {
+  const RouteInterest({
+    required this.id,
+    required this.routePostId,
+    required this.requesterUserId,
+    required this.ownerUserId,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.route,
+    required this.requester,
+    required this.owner,
+  });
+
+  final String id;
+  final String routePostId;
+  final String requesterUserId;
+  final String ownerUserId;
+  final String status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final RouteInterestRouteSummary route;
+  final RouteInterestUserSummary requester;
+  final RouteInterestUserSummary owner;
+
+  factory RouteInterest.fromJson(Map<String, dynamic> json) {
+    return RouteInterest(
+      id: json['id'] as String,
+      routePostId: json['routePostId'] as String,
+      requesterUserId: json['requesterUserId'] as String,
+      ownerUserId: json['ownerUserId'] as String,
+      status: json['status'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      route: RouteInterestRouteSummary.fromJson(
+        json['route'] as Map<String, dynamic>,
+      ),
+      requester: RouteInterestUserSummary.fromJson(
+        json['requester'] as Map<String, dynamic>,
+      ),
+      owner: RouteInterestUserSummary.fromJson(
+        json['owner'] as Map<String, dynamic>,
+      ),
+    );
+  }
+}

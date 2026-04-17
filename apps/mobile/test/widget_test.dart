@@ -34,6 +34,8 @@ void main() {
     expect(find.text('Profile'), findsOneWidget);
     expect(find.text('Create Route'), findsOneWidget);
     expect(find.text('Discover'), findsOneWidget);
+    expect(find.text('Outgoing'), findsOneWidget);
+    expect(find.text('Incoming'), findsOneWidget);
   });
 }
 
@@ -111,6 +113,16 @@ class _FakeApi implements RouteMatesApiClient {
   }
 
   @override
+  Future<List<RouteInterest>> getIncomingRouteInterests() async {
+    return const <RouteInterest>[];
+  }
+
+  @override
+  Future<List<RouteInterest>> getOutgoingRouteInterests() async {
+    return const <RouteInterest>[];
+  }
+
+  @override
   Future<AuthSession> login({
     required String email,
     required String password,
@@ -134,6 +146,11 @@ class _FakeApi implements RouteMatesApiClient {
   }
 
   @override
+  Future<RouteInterest> createRouteInterest({required String routePostId}) {
+    throw UnimplementedError();
+  }
+
+  @override
   void setAccessToken(String? token) {
     _accessToken = token;
   }
@@ -151,5 +168,13 @@ class _FakeApi implements RouteMatesApiClient {
       avatarUrl: payload['avatarUrl'] as String?,
       isProfileComplete: false,
     );
+  }
+
+  @override
+  Future<RouteInterest> ownerDecisionRouteInterest({
+    required String routeInterestId,
+    required String status,
+  }) {
+    throw UnimplementedError();
   }
 }

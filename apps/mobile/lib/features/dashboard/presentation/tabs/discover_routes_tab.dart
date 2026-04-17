@@ -19,6 +19,7 @@ class _DiscoverRoutesTabState extends State<DiscoverRoutesTab> {
   final _destinationController = TextEditingController();
   DateTime? _travelDate;
   bool _loading = false;
+  String? _submittingRouteId;
 
   @override
   void initState() {
@@ -155,6 +156,56 @@ class _DiscoverRoutesTabState extends State<DiscoverRoutesTab> {
                               'By ${route.owner.name}${route.owner.city == null ? '' : ' • ${route.owner.city}'}',
                             ),
                             isThreeLine: true,
+                            trailing: FilledButton(
+                              onPressed: _submittingRouteId != null
+                                  ? null
+                                  : () async {
+                                      setState(() {
+                                        _submittingRouteId = route.id;
+                                      });
+
+                                      try {
+                                        await widget.controller
+                                            .createRouteInterest(route.id);
+                                        if (!mounted) {
+                                          return;
+                                        }
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Interest request sent',
+                                                ),
+                                              ),
+                                            );
+                                      } catch (error) {
+                                        if (!mounted) {
+                                          return;
+                                        }
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                              SnackBar(
+                                                content: Text(error.toString()),
+                                              ),
+                                            );
+                                      } finally {
+                                        if (mounted) {
+                                          setState(() {
+                                            _submittingRouteId = null;
+                                          });
+                                        }
+                                      }
+                                    },
+                              child: _submittingRouteId == route.id
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Interested'),
+                            ),
                           ),
                         );
                       },

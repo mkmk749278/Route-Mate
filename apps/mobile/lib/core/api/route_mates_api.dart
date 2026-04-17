@@ -22,6 +22,13 @@ abstract class RouteMatesApiClient {
     String? destination,
     DateTime? travelDate,
   });
+  Future<RouteInterest> createRouteInterest({required String routePostId});
+  Future<List<RouteInterest>> getIncomingRouteInterests();
+  Future<List<RouteInterest>> getOutgoingRouteInterests();
+  Future<RouteInterest> ownerDecisionRouteInterest({
+    required String routeInterestId,
+    required String status,
+  });
 }
 
 class RouteMatesApi implements RouteMatesApiClient {
@@ -129,5 +136,44 @@ class RouteMatesApi implements RouteMatesApiClient {
     return routes
         .map((item) => DiscoveredRoute.fromJson(item as Map<String, dynamic>))
         .toList(growable: false);
+  }
+
+  @override
+  Future<RouteInterest> createRouteInterest({required String routePostId}) async {
+    final json = await _client.post(
+      '/route-interests',
+      body: {'routePostId': routePostId},
+    );
+    return RouteInterest.fromJson(json['interest'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<List<RouteInterest>> getIncomingRouteInterests() async {
+    final json = await _client.get('/route-interests/incoming');
+    final interests = json['interests'] as List<dynamic>? ?? <dynamic>[];
+    return interests
+        .map((item) => RouteInterest.fromJson(item as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<RouteInterest>> getOutgoingRouteInterests() async {
+    final json = await _client.get('/route-interests/outgoing');
+    final interests = json['interests'] as List<dynamic>? ?? <dynamic>[];
+    return interests
+        .map((item) => RouteInterest.fromJson(item as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  @override
+  Future<RouteInterest> ownerDecisionRouteInterest({
+    required String routeInterestId,
+    required String status,
+  }) async {
+    final json = await _client.patch(
+      '/route-interests/$routeInterestId/owner-decision',
+      body: {'status': status},
+    );
+    return RouteInterest.fromJson(json['interest'] as Map<String, dynamic>);
   }
 }

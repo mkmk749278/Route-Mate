@@ -42,10 +42,110 @@ describe('AppController (e2e)', () => {
     createdAt: Date;
     updatedAt: Date;
   };
+  type MockRouteInterest = {
+    id: string;
+    routePostId: string;
+    requesterUserId: string;
+    ownerUserId: string;
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
 
   beforeAll(async () => {
     const users = new Map<string, MockUser>();
     const routePosts = new Map<string, MockRoutePost>();
+    const routeInterests = new Map<string, MockRouteInterest>();
+
+    const applySelect = <T extends Record<string, unknown>>(
+      source: T,
+      select?: Record<string, boolean>,
+    ) => {
+      if (!select) {
+        return source;
+      }
+
+      return Object.fromEntries(
+        Object.keys(select).map((key) => [key, source[key as keyof T]]),
+      );
+    };
+
+    const mapRouteInterestForSelect = (
+      routeInterest: MockRouteInterest,
+      select?: Record<string, unknown>,
+    ) => {
+      if (!select) {
+        return routeInterest;
+      }
+
+      return Object.entries(select).reduce<Record<string, unknown>>(
+        (accumulator, [key, value]) => {
+          if (key === 'routePost' && typeof value === 'object' && value) {
+            const route = routePosts.get(routeInterest.routePostId) ?? null;
+            if (
+              route &&
+              'select' in value &&
+              typeof value.select === 'object' &&
+              value.select
+            ) {
+              accumulator[key] = applySelect(
+                route,
+                value.select as Record<string, boolean>,
+              );
+            } else {
+              accumulator[key] = route;
+            }
+            return accumulator;
+          }
+
+          if (key === 'requester' && typeof value === 'object' && value) {
+            const requester =
+              Array.from(users.values()).find(
+                (candidate) => candidate.id === routeInterest.requesterUserId,
+              ) ?? null;
+            if (
+              requester &&
+              'select' in value &&
+              typeof value.select === 'object' &&
+              value.select
+            ) {
+              accumulator[key] = applySelect(
+                requester,
+                value.select as Record<string, boolean>,
+              );
+            } else {
+              accumulator[key] = requester;
+            }
+            return accumulator;
+          }
+
+          if (key === 'owner' && typeof value === 'object' && value) {
+            const owner =
+              Array.from(users.values()).find(
+                (candidate) => candidate.id === routeInterest.ownerUserId,
+              ) ?? null;
+            if (
+              owner &&
+              'select' in value &&
+              typeof value.select === 'object' &&
+              value.select
+            ) {
+              accumulator[key] = applySelect(
+                owner,
+                value.select as Record<string, boolean>,
+              );
+            } else {
+              accumulator[key] = owner;
+            }
+            return accumulator;
+          }
+
+          accumulator[key] = routeInterest[key as keyof MockRouteInterest];
+          return accumulator;
+        },
+        {},
+      );
+    };
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -145,6 +245,19 @@ describe('AppController (e2e)', () => {
           },
         },
         routePost: {
+          findUnique: (params: {
+            where: { id: string };
+            select?: Record<string, boolean>;
+          }) => {
+            const route = routePosts.get(params.where.id) ?? null;
+            if (!route) {
+              return Promise.resolve(null);
+            }
+
+            return Promise.resolve(
+              applySelect(route, params.select) as Record<string, unknown>,
+            );
+          },
           create: (params: {
             data: {
               userId: string;
@@ -292,6 +405,139 @@ describe('AppController (e2e)', () => {
             }
 
             return Promise.resolve(sorted);
+          },
+        },
+        routeInterest: {
+          create: (params: {
+            data: {
+              routePostId: string;
+              requesterUserId: string;
+              ownerUserId: string;
+              status?: string;
+            };
+            select?: Record<string, unknown>;
+          }) => {
+            const now = new Date();
+            const created: MockRouteInterest = {
+              id: crypto.randomUUID(),
+              routePostId: params.data.routePostId,
+              requesterUserId: params.data.requesterUserId,
+              ownerUserId: params.data.ownerUserId,
+              status: params.data.status ?? 'pending',
+              createdAt: now,
+              updatedAt: now,
+            };
+            routeInterests.set(created.id, created);
+
+            return Promise.resolve(
+              mapRouteInterestForSelect(created, params.select),
+            );
+          },
+          findFirst: (params: {
+            where?: {
+              routePostId?: string;
+              requesterUserId?: string;
+              status?: { in: string[] };
+            };
+            select?: Record<string, unknown>;
+          }) => {
+            const found =
+              Array.from(routeInterests.values()).find((interest) => {
+                if (
+                  params.where?.routePostId &&
+                  interest.routePostId !== params.where.routePostId
+                ) {
+                  return false;
+                }
+                if (
+                  params.where?.requesterUserId &&
+                  interest.requesterUserId !== params.where.requesterUserId
+                ) {
+                  return false;
+                }
+                if (
+                  params.where?.status?.in &&
+                  !params.where.status.in.includes(interest.status)
+                ) {
+                  return false;
+                }
+                return true;
+              }) ?? null;
+
+            if (!found) {
+              return Promise.resolve(null);
+            }
+
+            return Promise.resolve(
+              mapRouteInterestForSelect(found, params.select),
+            );
+          },
+          findUnique: (params: {
+            where: { id: string };
+            select?: Record<string, unknown>;
+          }) => {
+            const found = routeInterests.get(params.where.id) ?? null;
+            if (!found) {
+              return Promise.resolve(null);
+            }
+            return Promise.resolve(
+              mapRouteInterestForSelect(found, params.select),
+            );
+          },
+          findMany: (params: {
+            where?: { ownerUserId?: string; requesterUserId?: string };
+            orderBy?: Record<string, 'asc' | 'desc'>;
+            select?: Record<string, unknown>;
+          }) => {
+            const filtered = Array.from(routeInterests.values()).filter(
+              (interest) => {
+                if (
+                  params.where?.ownerUserId &&
+                  interest.ownerUserId !== params.where.ownerUserId
+                ) {
+                  return false;
+                }
+                if (
+                  params.where?.requesterUserId &&
+                  interest.requesterUserId !== params.where.requesterUserId
+                ) {
+                  return false;
+                }
+                return true;
+              },
+            );
+
+            const sorted = filtered.sort((a, b) => {
+              if (params.orderBy?.createdAt === 'asc') {
+                return a.createdAt.getTime() - b.createdAt.getTime();
+              }
+              return b.createdAt.getTime() - a.createdAt.getTime();
+            });
+
+            return Promise.resolve(
+              sorted.map((interest) =>
+                mapRouteInterestForSelect(interest, params.select),
+              ),
+            );
+          },
+          update: (params: {
+            where: { id: string };
+            data: { status?: string };
+            select?: Record<string, unknown>;
+          }) => {
+            const current = routeInterests.get(params.where.id) ?? null;
+            if (!current) {
+              return Promise.resolve(null);
+            }
+            const updated: MockRouteInterest = {
+              ...current,
+              status: params.data.status ?? current.status,
+              updatedAt: new Date(),
+            };
+            routeInterests.set(updated.id, updated);
+            return Promise.resolve(
+              mapRouteInterestForSelect(updated, params.select),
+            );
           },
         },
       })
@@ -664,6 +910,247 @@ describe('AppController (e2e)', () => {
           'https://example.com/discover-owner-one.png',
         );
       });
+  });
+
+  it('route interests: prevents requesting own route and duplicate active requests', async () => {
+    const ownerRegister = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        email: 'interest-owner@example.com',
+        name: 'Interest Owner',
+        password: 'StrongPass123',
+      })
+      .expect(201);
+    const ownerAuth = ownerRegister.body as AuthResponse;
+
+    const requesterRegister = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        email: 'interest-requester@example.com',
+        name: 'Interest Requester',
+        password: 'StrongPass123',
+      })
+      .expect(201);
+    const requesterAuth = requesterRegister.body as AuthResponse;
+
+    const routeCreateResponse = await request(app.getHttpServer())
+      .post('/routes')
+      .set('Authorization', `Bearer ${ownerAuth.accessToken}`)
+      .send({
+        origin: 'KPHB',
+        destination: 'Financial District',
+        travelDate: '2026-06-20T00:00:00.000Z',
+        preferredDepartureTime: '08:40',
+      })
+      .expect(201);
+    const routeBody = routeCreateResponse.body as {
+      route?: { id?: string };
+    };
+    const routePostId = routeBody.route?.id;
+    expect(routePostId).toBeTruthy();
+
+    await request(app.getHttpServer())
+      .post('/route-interests')
+      .set('Authorization', `Bearer ${ownerAuth.accessToken}`)
+      .send({ routePostId })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .post('/route-interests')
+      .set('Authorization', `Bearer ${requesterAuth.accessToken}`)
+      .send({ routePostId })
+      .expect(201)
+      .expect(({ body }) => {
+        const interestBody = body as { interest?: { status?: string } };
+        expect(interestBody.interest?.status).toBe('pending');
+      });
+
+    await request(app.getHttpServer())
+      .post('/route-interests')
+      .set('Authorization', `Bearer ${requesterAuth.accessToken}`)
+      .send({ routePostId })
+      .expect(409);
+  });
+
+  it('route interests: scopes incoming/outgoing and allows owner accept/reject only', async () => {
+    const ownerRegister = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        email: 'interest-owner-scope@example.com',
+        name: 'Interest Owner Scope',
+        password: 'StrongPass123',
+      })
+      .expect(201);
+    const ownerAuth = ownerRegister.body as AuthResponse;
+
+    const requesterRegister = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        email: 'interest-requester-scope@example.com',
+        name: 'Interest Requester Scope',
+        password: 'StrongPass123',
+      })
+      .expect(201);
+    const requesterAuth = requesterRegister.body as AuthResponse;
+
+    const outsiderRegister = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        email: 'interest-outsider@example.com',
+        name: 'Interest Outsider',
+        password: 'StrongPass123',
+      })
+      .expect(201);
+    const outsiderAuth = outsiderRegister.body as AuthResponse;
+
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .set('Authorization', `Bearer ${ownerAuth.accessToken}`)
+      .send({
+        city: 'Hyderabad',
+        phone: '+919999999999',
+      })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .set('Authorization', `Bearer ${requesterAuth.accessToken}`)
+      .send({
+        city: 'Secunderabad',
+        phone: '+918888888888',
+      })
+      .expect(200);
+
+    const routeCreateResponse = await request(app.getHttpServer())
+      .post('/routes')
+      .set('Authorization', `Bearer ${ownerAuth.accessToken}`)
+      .send({
+        origin: 'Madhapur',
+        destination: 'Gachibowli',
+        travelDate: '2026-06-21T00:00:00.000Z',
+        preferredDepartureTime: '09:10',
+      })
+      .expect(201);
+
+    const routePostId = (
+      routeCreateResponse.body as { route?: { id?: string } }
+    ).route?.id;
+    expect(routePostId).toBeTruthy();
+
+    const interestCreateResponse = await request(app.getHttpServer())
+      .post('/route-interests')
+      .set('Authorization', `Bearer ${requesterAuth.accessToken}`)
+      .send({ routePostId })
+      .expect(201);
+    const routeInterestId = (
+      interestCreateResponse.body as { interest?: { id?: string } }
+    ).interest?.id;
+    expect(routeInterestId).toBeTruthy();
+
+    await request(app.getHttpServer())
+      .get('/route-interests/outgoing')
+      .set('Authorization', `Bearer ${requesterAuth.accessToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        const outgoingBody = body as {
+          interests?: Array<{
+            status?: string;
+            route?: { origin?: string };
+            owner?: { name?: string; phone?: string | null };
+          }>;
+        };
+        expect(outgoingBody.interests).toHaveLength(1);
+        expect(outgoingBody.interests?.[0]?.status).toBe('pending');
+        expect(outgoingBody.interests?.[0]?.route?.origin).toBe('Madhapur');
+        expect(outgoingBody.interests?.[0]?.owner?.name).toBe(
+          'Interest Owner Scope',
+        );
+        expect(outgoingBody.interests?.[0]?.owner?.phone).toBeNull();
+      });
+
+    await request(app.getHttpServer())
+      .get('/route-interests/incoming')
+      .set('Authorization', `Bearer ${ownerAuth.accessToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        const incomingBody = body as {
+          interests?: Array<{
+            status?: string;
+            requester?: { name?: string; phone?: string | null };
+          }>;
+        };
+        expect(incomingBody.interests).toHaveLength(1);
+        expect(incomingBody.interests?.[0]?.status).toBe('pending');
+        expect(incomingBody.interests?.[0]?.requester?.name).toBe(
+          'Interest Requester Scope',
+        );
+        expect(incomingBody.interests?.[0]?.requester?.phone).toBeNull();
+      });
+
+    await request(app.getHttpServer())
+      .get('/route-interests/incoming')
+      .set('Authorization', `Bearer ${outsiderAuth.accessToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        const incomingBody = body as { interests?: Array<unknown> };
+        expect(incomingBody.interests).toHaveLength(0);
+      });
+
+    await request(app.getHttpServer())
+      .patch(`/route-interests/${routeInterestId}/owner-decision`)
+      .set('Authorization', `Bearer ${outsiderAuth.accessToken}`)
+      .send({ status: 'accepted' })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .patch(`/route-interests/${routeInterestId}/owner-decision`)
+      .set('Authorization', `Bearer ${ownerAuth.accessToken}`)
+      .send({ status: 'accepted' })
+      .expect(200)
+      .expect(({ body }) => {
+        const updatedBody = body as {
+          interest?: {
+            status?: string;
+            requester?: { phone?: string | null };
+          };
+        };
+        expect(updatedBody.interest?.status).toBe('accepted');
+        expect(updatedBody.interest?.requester?.phone).toBe('+918888888888');
+      });
+
+    await request(app.getHttpServer())
+      .get('/route-interests/outgoing')
+      .set('Authorization', `Bearer ${requesterAuth.accessToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        const outgoingBody = body as {
+          interests?: Array<{
+            status?: string;
+            owner?: { phone?: string | null };
+          }>;
+        };
+        expect(outgoingBody.interests?.[0]?.status).toBe('accepted');
+        expect(outgoingBody.interests?.[0]?.owner?.phone).toBe('+919999999999');
+      });
+
+    await request(app.getHttpServer())
+      .patch(`/route-interests/${routeInterestId}/owner-decision`)
+      .set('Authorization', `Bearer ${ownerAuth.accessToken}`)
+      .send({ status: 'rejected' })
+      .expect(409);
+  });
+
+  it('rejects route-interest endpoints without token', async () => {
+    await request(app.getHttpServer())
+      .get('/route-interests/incoming')
+      .expect(401);
+    await request(app.getHttpServer())
+      .get('/route-interests/outgoing')
+      .expect(401);
+    await request(app.getHttpServer())
+      .post('/route-interests')
+      .send({ routePostId: crypto.randomUUID() })
+      .expect(401);
   });
 
   it('rejects /routes without token', async () => {
