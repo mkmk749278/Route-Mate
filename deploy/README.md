@@ -30,6 +30,8 @@ Redis is intentionally not part of this MVP deployment stack because it is not u
    curl http://<vps-ip>/health
    ```
 
+`/health` currently validates database readiness (PostgreSQL) for this MVP deployment baseline.
+
 ## Migration path
 
 The API service starts with:
@@ -41,6 +43,8 @@ npm run prisma:migrate:deploy && node dist/main
 This applies committed Prisma migrations before serving traffic.
 
 Prisma schema and migration files are copied into the API runtime image via `apps/api/Dockerfile`.
+
+If `CORS_ORIGIN` is left blank, API CORS behaves permissively (`allow-all`). Set a concrete origin (or comma-separated origins) in production.
 
 ## HTTPS/TLS (recommended next step)
 

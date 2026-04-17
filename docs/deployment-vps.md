@@ -21,6 +21,7 @@ Set secure values in `deploy/.env.vps`:
 - `DB_PASSWORD`
 - `JWT_SECRET`
 - `CORS_ORIGIN` (for example `https://api.example.com`, or comma-separated origins if needed)
+  - leave blank only if you intentionally want permissive CORS (`allow-all`)
 
 ## 2) Start production stack
 
@@ -44,6 +45,7 @@ Expected response includes:
 
 - `status: healthy`
 - `checks.database: up`
+- current readiness check verifies PostgreSQL connectivity (Redis is not part of this MVP stack)
 
 ## Migration execution path
 
