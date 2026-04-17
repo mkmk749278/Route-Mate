@@ -63,7 +63,13 @@ npm run test
 npm run test:e2e
 ```
 
-The API reads environment variables via `@nestjs/config` and validates key bootstrap settings (`APP_ENV`, `API_PORT`).
+The API reads environment variables via `@nestjs/config` and validates key bootstrap settings (`APP_ENV`, `API_PORT`, `JWT_SECRET`, `JWT_EXPIRES_IN`).
+
+Auth endpoints:
+
+- `POST /auth/register` (email, name, password)
+- `POST /auth/login` (email, password)
+- `GET /auth/me` (JWT protected)
 
 ## Mobile (Flutter) — `apps/mobile`
 
