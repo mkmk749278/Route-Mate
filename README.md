@@ -2,7 +2,7 @@
 
 Route Mates is a Hyderabad-first route-matching platform for daily city travel.
 
-This repository is now in **implementation bootstrap stage**: the backend and mobile foundations are scaffolded so the next PRs can focus on auth, profiles, route APIs, and matching.
+This repository is now in **implementation stage**: the backend and mobile foundations are scaffolded, with core auth/profile/route posting APIs in place for upcoming matching and coordination features.
 
 ## Repository Structure
 
@@ -83,6 +83,13 @@ Profile endpoints:
   - accepted fields: `name`, `phone`, `city`, `gender` (`male` | `female` | `non_binary` | `prefer_not_to_say`), `bio`, `avatarUrl`
   - profile completion is persisted as `isProfileComplete` and is set when `name`, `city`, and `bio` are all present
 
+Route post endpoints:
+
+- `POST /routes` (JWT protected)
+- `GET /routes/me` (JWT protected, only current user's route posts)
+  - create payload: `origin`, `destination`, `travelDate` (ISO-8601), `preferredDepartureTime` (`HH:mm`), optional `seatCount`, optional `notes`
+  - response includes route post metadata (`id`, `userId`, `status`, `createdAt`, `updatedAt`)
+
 ## Mobile (Flutter) — `apps/mobile`
 
 1. Ensure Flutter SDK is installed and available in PATH.
@@ -135,6 +142,6 @@ REDIS_URL=redis://redis:6379
 ## Next Stage
 
 Bootstrap is complete; upcoming implementation PRs should cover:
-- authentication and profiles
-- route posting and retrieval APIs
-- route matching flows and notifications
+- mobile integration for auth/profile/routes
+- route matching flows
+- notifications and downstream ride coordination

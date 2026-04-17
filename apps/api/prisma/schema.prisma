@@ -26,4 +26,22 @@ model User {
   isProfileComplete Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  routePosts        RoutePost[]
+}
+
+model RoutePost {
+  id                     String   @id @default(uuid()) @db.Uuid
+  userId                 String   @db.Uuid
+  origin                 String
+  destination            String
+  travelDate             DateTime
+  preferredDepartureTime String
+  seatCount              Int?
+  notes                  String?
+  status                 String   @default("active")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

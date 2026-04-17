@@ -16,6 +16,16 @@ NestJS backend foundation for Route Mates MVP.
     - updatable fields: `name`, `phone`, `city`, `gender`, `bio`, `avatarUrl`
     - `gender` accepted values: `male`, `female`, `non_binary`, `prefer_not_to_say`
     - `isProfileComplete` becomes true when `name`, `city`, and `bio` are all available
+- Route post endpoints for authenticated users:
+  - `POST /routes` (protected)
+  - `GET /routes/me` (protected, only current user's route posts)
+    - create payload fields:
+      - `origin` (string)
+      - `destination` (string)
+      - `travelDate` (ISO-8601 datetime string)
+      - `preferredDepartureTime` (`HH:mm`)
+      - optional: `seatCount` (integer >= 1), `notes` (string)
+    - persisted route post fields include: `id`, `userId`, `status`, `createdAt`, `updatedAt`
 - Base scripts for dev, build, lint, unit tests, and e2e tests
 - Dockerfile for containerized local/dev deployment
 
@@ -40,6 +50,15 @@ Auth quick check:
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","name":"Route User","password":"StrongPass123"}'
+```
+
+Route post quick check:
+
+```bash
+curl -X POST http://localhost:3000/routes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -d '{"origin":"Kukatpally","destination":"Gachibowli","travelDate":"2026-05-02T00:00:00.000Z","preferredDepartureTime":"09:30","seatCount":2,"notes":"Can start +/- 15 mins"}'
 ```
 
 ## Scripts
