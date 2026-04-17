@@ -4,13 +4,15 @@ This runbook is for first live rollout verification and early operational respon
 
 ## 1) First deployment verification
 
-1. Confirm containers are healthy:
+1. Deploy or update the stack:
 
    ```bash
-   docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml ps
+   ./deploy/deploy-vps.sh
    ```
 
-2. Confirm API readiness:
+   The deploy script prints `docker compose ... ps` and runs a localhost health check.
+
+2. Confirm API readiness from your workstation or VPS:
 
    ```bash
    curl -sS http://<vps-ip>/health
@@ -42,7 +44,7 @@ If a deployment fails validation:
 2. Rebuild and restart with that revision:
 
    ```bash
-   docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml up -d --build
+   ./deploy/deploy-vps.sh
    ```
 
 3. Re-run `/health` and key smoke steps.

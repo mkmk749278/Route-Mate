@@ -25,8 +25,22 @@ Set secure values in `deploy/.env.vps`:
 
 ## 2) Start production stack
 
+Primary command (from repository root):
+
 ```bash
-docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml up -d --build
+./deploy/deploy-vps.sh
+```
+
+What this script does:
+- validates Docker + Docker Compose availability
+- validates `deploy/.env.vps` and `deploy/docker-compose.vps.yml`
+- runs `docker compose ... up -d --build --remove-orphans`
+- prints stack status and runs a retrying `curl http://localhost/health` check when available
+
+Manual fallback:
+
+```bash
+docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml up -d --build --remove-orphans
 ```
 
 Services:
@@ -37,8 +51,10 @@ Services:
 
 ## 3) Verify deployment
 
+The deploy script already performs this check if `curl` is available. Manual check:
+
 ```bash
-curl http://<vps-ip>/health
+curl -fsS http://<vps-ip>/health
 ```
 
 Expected response includes:

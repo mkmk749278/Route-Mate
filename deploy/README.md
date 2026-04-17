@@ -10,27 +10,46 @@ This directory contains the first-pass deployment assets for a single VPS rollou
 
 Redis is intentionally not part of this MVP deployment stack because it is not used by the current backend runtime.
 
-## First deployment steps
+## One-command deployment (primary path)
 
-1. Copy and edit environment values:
+On a prepared VPS, from repository root:
 
-   ```bash
-   cp deploy/.env.vps.example deploy/.env.vps
-   ```
+1. Create and edit host-side env values:
 
-2. Build and start services:
+```bash
+cp deploy/.env.vps.example deploy/.env.vps
+```
 
-   ```bash
-   docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml up -d --build
-   ```
+2. Run deployment:
 
-3. Verify health:
+```bash
+./deploy/deploy-vps.sh
+```
 
-   ```bash
-   curl http://<vps-ip>/health
-   ```
+The script validates Docker + Docker Compose availability, checks required deployment files, runs Compose build/up, prints service status, and runs a localhost health check (with retries) when `curl` is installed.
+
+## Minimal VPS prerequisites
+
+- Docker Engine installed and running
+- Docker Compose plugin available (`docker compose`)
+- `deploy/.env.vps` created with secure host-side values
+
+## Immediate verification
 
 `/health` currently validates database readiness (PostgreSQL) for this MVP deployment baseline.
+
+If needed, run manually:
+
+```bash
+curl -fsS http://<vps-ip>/health
+docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml ps
+```
+
+## Manual compose command (fallback)
+
+```bash
+docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml up -d --build --remove-orphans
+```
 
 ## Migration path
 
