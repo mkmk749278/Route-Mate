@@ -47,6 +47,11 @@ Expected response includes:
 - `checks.database: up`
 - current readiness check verifies PostgreSQL connectivity (Redis is not part of this MVP stack)
 
+Then run:
+
+- production smoke test checklist: `docs/production-validation-smoke-test.md`
+- operations runbook checks: `docs/operations-runbook.md`
+
 ## Migration execution path
 
 The API startup command in `deploy/docker-compose.vps.yml` is:
@@ -66,3 +71,7 @@ Redis is not included in this MVP deployment stack because current backend runti
 ## TLS/HTTPS
 
 After HTTP verification, add TLS in your VPS setup (for example Certbot-managed certificates with Nginx). Keep certificate files and private keys outside this repository.
+
+## Backup/restore baseline
+
+Use `docs/postgresql-backup-restore.md` for single-VPS backup and restore commands.

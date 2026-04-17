@@ -4,6 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { DiscoverRoutesQueryDto } from './dto/discover-routes-query.dto';
 
+const DEFAULT_DISCOVER_LIMIT = 20;
+
 @Injectable()
 export class RoutesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -60,6 +62,8 @@ export class RoutesService {
   }
 
   async discoverRoutes(userId: string, query: DiscoverRoutesQueryDto) {
+    const limit = query.limit ?? DEFAULT_DISCOVER_LIMIT;
+    const offset = query.offset ?? 0;
     const where: Prisma.RoutePostWhereInput = {
       userId: { not: userId },
     };
@@ -97,6 +101,8 @@ export class RoutesService {
 
     const routes = await this.prisma.routePost.findMany({
       where,
+      take: limit,
+      skip: offset,
       orderBy: [{ travelDate: 'asc' }, { createdAt: 'desc' }],
       select: {
         id: true,
@@ -126,6 +132,10 @@ export class RoutesService {
         ...route,
         owner: user,
       })),
+      pagination: {
+        limit,
+        offset,
+      },
     };
   }
 }

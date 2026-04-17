@@ -76,6 +76,9 @@ The API reads environment variables via `@nestjs/config` and validates key boots
 
 Production deployment assets and VPS runbook are available in `deploy/` (`deploy/README.md`).
 Detailed deployment checklist: `docs/deployment-vps.md`.
+Production validation checklist: `docs/production-validation-smoke-test.md`.
+Operations runbook: `docs/operations-runbook.md`.
+PostgreSQL backup/restore baseline: `docs/postgresql-backup-restore.md`.
 
 Auth endpoints:
 
@@ -96,6 +99,7 @@ Route post endpoints:
 - `GET /routes/me` (JWT protected, only current user's route posts)
 - `GET /routes/discover` (JWT protected, only route posts from other users)
   - optional query filters: `origin`, `destination` (case-insensitive contains), `travelDate` (ISO-8601 date/datetime for same UTC day)
+  - optional pagination: `limit` (default `20`, max `50`) and `offset` (default `0`, max `1000`)
   - deterministic sort: `travelDate` ascending, then `createdAt` descending
   - includes route listing fields plus limited owner info for mobile browse cards: `owner.id`, `owner.name`, `owner.city`, `owner.avatarUrl`
   - create payload: `origin`, `destination`, `travelDate` (ISO-8601), `preferredDepartureTime` (`HH:mm`), optional `seatCount`, optional `notes`

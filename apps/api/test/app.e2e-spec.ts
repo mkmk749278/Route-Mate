@@ -307,6 +307,8 @@ describe('AppController (e2e)', () => {
               destination?: { contains: string; mode: 'insensitive' };
               travelDate?: { gte: Date; lt: Date };
             };
+            take?: number;
+            skip?: number;
             orderBy?:
               | Array<Record<string, 'asc' | 'desc'>>
               | Record<string, 'asc' | 'desc'>;
@@ -368,10 +370,14 @@ describe('AppController (e2e)', () => {
 
               return b.createdAt.getTime() - a.createdAt.getTime();
             });
+            const paged = sorted.slice(
+              params.skip ?? 0,
+              (params.skip ?? 0) + (params.take ?? sorted.length),
+            );
 
             if (params.select) {
               return Promise.resolve(
-                sorted.map((route) => {
+                paged.map((route) => {
                   const selectedRoute = Object.entries(params.select).reduce<
                     Record<string, unknown>
                   >((accumulator, [key, value]) => {
@@ -405,7 +411,7 @@ describe('AppController (e2e)', () => {
               );
             }
 
-            return Promise.resolve(sorted);
+            return Promise.resolve(paged);
           },
         },
         routeInterest: {
@@ -880,8 +886,11 @@ describe('AppController (e2e)', () => {
           avatarUrl?: string | null;
         };
       }>;
+      pagination?: { limit?: number; offset?: number };
     };
     expect(discoverBody.routes).toHaveLength(2);
+    expect(discoverBody.pagination?.limit).toBe(20);
+    expect(discoverBody.pagination?.offset).toBe(0);
     expect(
       discoverBody.routes?.every(
         (route) => route.userId !== requesterAuth.user.id,
@@ -921,6 +930,24 @@ describe('AppController (e2e)', () => {
         expect(filteredBody.routes?.[0]?.owner?.avatarUrl).toBe(
           'https://example.com/discover-owner-one.png',
         );
+      });
+
+    await request(app.getHttpServer())
+      .get('/routes/discover')
+      .query({ travelDate: '2026-06-12', limit: 1, offset: 1 })
+      .set('Authorization', `Bearer ${requesterAuth.accessToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        const paginatedBody = body as {
+          routes?: Array<{ owner?: { name?: string } }>;
+          pagination?: { limit?: number; offset?: number };
+        };
+        expect(paginatedBody.routes).toHaveLength(1);
+        expect(paginatedBody.routes?.[0]?.owner?.name).toBe(
+          'Discover Owner One',
+        );
+        expect(paginatedBody.pagination?.limit).toBe(1);
+        expect(paginatedBody.pagination?.offset).toBe(1);
       });
   });
 

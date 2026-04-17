@@ -1,11 +1,15 @@
 import {
+  IsInt,
   IsISO8601,
   IsOptional,
   IsString,
+  Max,
+  Min,
   Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { TrimString } from '../../shared/decorators/trim-string.decorator';
 
 export class DiscoverRoutesQueryDto {
@@ -28,4 +32,18 @@ export class DiscoverRoutesQueryDto {
   @IsOptional()
   @IsISO8601()
   travelDate?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  offset?: number;
 }
