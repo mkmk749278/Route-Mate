@@ -26,7 +26,6 @@ void main() {
     final apiBaseUrl = AppConfig.resolveApiBaseUrl(
       apiBaseUrlOverride: '',
       isReleaseMode: false,
-      isAndroid: false,
       isIOS: true,
     );
 
