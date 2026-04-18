@@ -167,10 +167,10 @@ cd apps/mobile
 flutter pub get
 ```
 
-3. Run on Android emulator/device (with configurable backend URL):
+3. Run on Android emulator (default local dev URL):
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
+flutter run
 ```
 
 The mobile app includes:
@@ -178,10 +178,14 @@ The mobile app includes:
 - persisted auth token restore on app startup
 - MVP dashboard tabs for profile update, route posting, route discovery, outgoing requests, and incoming requests
 
-`API_BASE_URL` notes:
-- Android emulator -> host API: `http://10.0.2.2:3000`
-- iOS simulator -> host API: `http://localhost:3000`
-- physical device -> use your machine LAN IP, e.g. `http://192.168.1.20:3000`
+`API_BASE_URL` targeting:
+- Android emulator local dev: `flutter run` (defaults to `http://10.0.2.2:3000`)
+- iOS simulator local dev: `flutter run --dart-define=API_BASE_URL=http://localhost:3000`
+- physical device on LAN: `flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3000`
+- deployed VPS/domain: `flutter run --dart-define=API_BASE_URL=http://YOUR_VPS_IP` (or `https://api.yourdomain.com`)
+- release/demo build: `flutter build apk --release --dart-define=API_BASE_URL=https://api.yourdomain.com`
+
+Release/demo builds fail fast if `API_BASE_URL` is missing or points to local-only hosts (`10.0.2.2`, `localhost`, `127.0.0.1`).
 
 ## Quick local run (API + Mobile)
 
@@ -208,10 +212,10 @@ npm run start:dev
 ```bash
 cd apps/mobile
 flutter pub get
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
+flutter run
 ```
 
-If using a physical device, replace `10.0.2.2` with your host LAN IP (e.g., `192.168.1.20`).
+If using iOS simulator, physical device, or deployed VPS/domain backend, set `API_BASE_URL` explicitly as shown in the Mobile section above.
 
 ## Demo walkthrough (no seed platform required)
 

@@ -13,24 +13,47 @@ Android-first MVP app integrated with backend APIs for:
 ```bash
 cd apps/mobile
 flutter pub get
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
+flutter run
 ```
 
 Backend API is expected at port `3000`. See `/apps/api/README.md` for backend startup steps.
 
-## API base URL notes
+By default, debug runs use local simulator/emulator-safe URLs:
+- Android emulator: `http://10.0.2.2:3000`
+- iOS simulator: `http://localhost:3000`
+
+## API base URL targets
 
 The app reads backend URL from Dart define `API_BASE_URL`.
 
-- Android emulator to host machine API: `http://10.0.2.2:3000`
-- iOS simulator to host machine API: `http://localhost:3000`
-- Physical device: use your machine LAN IP, e.g. `http://192.168.1.20:3000`
+- Android emulator local dev:
+  ```bash
+  flutter run
+  ```
+- iOS simulator local dev:
+  ```bash
+  flutter run --dart-define=API_BASE_URL=http://localhost:3000
+  ```
+- Physical device on LAN:
+  ```bash
+  flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3000
+  ```
+- Deployed VPS/domain backend:
+  ```bash
+  flutter run --dart-define=API_BASE_URL=http://YOUR_VPS_IP
+  # or
+  flutter run --dart-define=API_BASE_URL=https://api.yourdomain.com
+  ```
 
-Example:
+## Release / demo build (required production URL)
+
+Always provide a deployed backend URL:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3000
+flutter build apk --release --dart-define=API_BASE_URL=https://api.yourdomain.com
 ```
+
+Release/demo builds intentionally fail fast if `API_BASE_URL` is missing or points to local-only hosts like `10.0.2.2` or `localhost`.
 
 ## MVP flow
 
