@@ -85,13 +85,15 @@ PostgreSQL backup/restore baseline: `docs/postgresql-backup-restore.md`.
 On a fresh Ubuntu VPS:
 
 ```bash
-sudo apt-get update && sudo apt-get install -y git curl ca-certificates && curl -fsSL https://get.docker.com | sudo sh && sudo systemctl enable --now docker
+sudo apt-get update && sudo apt-get install -y git curl ca-certificates
+curl -fsSL https://get.docker.com -o get-docker.sh
+less get-docker.sh
+sudo sh get-docker.sh
+sudo systemctl enable --now docker
 git clone https://github.com/mkmk749278/Route-Mate.git
 cd Route-Mate
 cp deploy/.env.vps.example deploy/.env.vps
 ```
-
-Review the Docker install script before running it, or replace that step with the equivalent packages from the official Docker Ubuntu install guide if your environment requires stricter change control.
 
 Edit `deploy/.env.vps` with secure values for `DB_PASSWORD`, `JWT_SECRET`, and `CORS_ORIGIN`, then run:
 
