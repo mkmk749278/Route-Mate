@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
@@ -32,14 +30,14 @@ class AppConfig {
       );
     }
 
-    final ios = isIOS ?? Platform.isIOS;
+    final ios = isIOS ?? (defaultTargetPlatform == TargetPlatform.iOS);
 
     if (ios) {
       return _iosSimulatorApiBaseUrl;
     }
 
-    // Android emulator URL is used as the default for Android and other
-    // non-iOS debug targets unless API_BASE_URL is explicitly provided.
+    // Android emulator default. Other debug targets (physical device, desktop,
+    // web) should pass API_BASE_URL explicitly via --dart-define.
     return _androidEmulatorApiBaseUrl;
   }
 
