@@ -32,7 +32,7 @@ The app reads backend URL from Dart define `API_BASE_URL`.
   ```
 - iOS simulator local dev:
   ```bash
-  flutter run --dart-define=API_BASE_URL=http://localhost:3000
+  flutter run
   ```
 - Physical device on LAN:
   ```bash

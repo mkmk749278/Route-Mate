@@ -10,7 +10,6 @@ class AppConfig {
   static String resolveApiBaseUrl({
     String? apiBaseUrlOverride,
     bool? isReleaseMode,
-    bool? isAndroid,
     bool? isIOS,
   }) {
     final configuredApiBaseUrl = (apiBaseUrlOverride ?? _apiBaseUrlDefine).trim();
@@ -33,16 +32,14 @@ class AppConfig {
       );
     }
 
-    final android = isAndroid ?? Platform.isAndroid;
     final ios = isIOS ?? Platform.isIOS;
 
-    if (android) {
-      return _androidEmulatorApiBaseUrl;
-    }
     if (ios) {
       return _iosSimulatorApiBaseUrl;
     }
 
+    // Android emulator URL is used as the default for Android and other
+    // non-iOS debug targets unless API_BASE_URL is explicitly provided.
     return _androidEmulatorApiBaseUrl;
   }
 

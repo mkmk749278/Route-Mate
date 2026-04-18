@@ -6,7 +6,6 @@ void main() {
     final apiBaseUrl = AppConfig.resolveApiBaseUrl(
       apiBaseUrlOverride: 'https://api.example.com',
       isReleaseMode: true,
-      isAndroid: true,
       isIOS: false,
     );
 
@@ -17,7 +16,6 @@ void main() {
     final apiBaseUrl = AppConfig.resolveApiBaseUrl(
       apiBaseUrlOverride: '',
       isReleaseMode: false,
-      isAndroid: true,
       isIOS: false,
     );
 
@@ -40,7 +38,6 @@ void main() {
       () => AppConfig.resolveApiBaseUrl(
         apiBaseUrlOverride: '',
         isReleaseMode: true,
-        isAndroid: true,
         isIOS: false,
       ),
       throwsStateError,
@@ -52,7 +49,6 @@ void main() {
       () => AppConfig.resolveApiBaseUrl(
         apiBaseUrlOverride: 'http://10.0.2.2:3000',
         isReleaseMode: true,
-        isAndroid: true,
         isIOS: false,
       ),
       throwsStateError,

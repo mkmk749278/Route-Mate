@@ -180,7 +180,7 @@ The mobile app includes:
 
 `API_BASE_URL` targeting:
 - Android emulator local dev: `flutter run` (defaults to `http://10.0.2.2:3000`)
-- iOS simulator local dev: `flutter run --dart-define=API_BASE_URL=http://localhost:3000`
+- iOS simulator local dev: `flutter run` (defaults to `http://localhost:3000`)
 - physical device on LAN: `flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3000`
 - deployed VPS/domain: `flutter run --dart-define=API_BASE_URL=http://YOUR_VPS_IP` (or `https://api.yourdomain.com`)
 - release/demo build: `flutter build apk --release --dart-define=API_BASE_URL=https://api.yourdomain.com`
