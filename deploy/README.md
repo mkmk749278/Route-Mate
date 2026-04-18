@@ -12,7 +12,21 @@ Redis is intentionally not part of this MVP deployment stack because it is not u
 
 ## One-command deployment (primary path)
 
-On a prepared VPS, from repository root:
+Fresh Ubuntu VPS bootstrap:
+
+Review `get-docker.sh` before running it with `sudo sh`, or use Docker's official Ubuntu package-install flow if you need a stricter setup process.
+
+```bash
+sudo apt-get update && sudo apt-get install -y git curl ca-certificates
+curl -fsSL https://get.docker.com -o get-docker.sh
+less get-docker.sh
+sudo sh get-docker.sh
+sudo systemctl enable --now docker
+git clone https://github.com/mkmk749278/Route-Mate.git
+cd Route-Mate
+```
+
+From repository root:
 
 1. Create and edit host-side env values:
 
@@ -27,6 +41,14 @@ cp deploy/.env.vps.example deploy/.env.vps
 ```
 
 The script validates Docker + Docker Compose availability, checks required deployment files, runs Compose build/up, prints service status, and runs a localhost health check (with retries) when `curl` is installed.
+
+## One-command update (existing VPS checkout)
+
+```bash
+git pull --ff-only && ./deploy/deploy-vps.sh
+```
+
+Use this after changing `deploy/.env.vps` or pulling newer application code on the VPS.
 
 ## Minimal VPS prerequisites
 
@@ -49,6 +71,21 @@ docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml ps
 
 ```bash
 docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml up -d --build --remove-orphans
+```
+
+## Useful commands
+
+```bash
+# stack status
+docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml ps
+
+# API health from the VPS
+curl -fsS http://localhost/health
+
+# recent logs
+docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml logs api --tail=200
+docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml logs nginx --tail=200
+docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml logs postgres --tail=200
 ```
 
 ## Migration path

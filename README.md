@@ -80,6 +80,50 @@ Production validation checklist: `docs/production-validation-smoke-test.md`.
 Operations runbook: `docs/operations-runbook.md`.
 PostgreSQL backup/restore baseline: `docs/postgresql-backup-restore.md`.
 
+## Ubuntu VPS quick deploy
+
+On a fresh Ubuntu VPS:
+
+Review `get-docker.sh` before running it with `sudo sh`, or replace that step with Docker's official Ubuntu package-install flow if you need stricter change control.
+
+```bash
+sudo apt-get update && sudo apt-get install -y git curl ca-certificates
+curl -fsSL https://get.docker.com -o get-docker.sh
+less get-docker.sh
+sudo sh get-docker.sh
+sudo systemctl enable --now docker
+git clone https://github.com/mkmk749278/Route-Mate.git
+cd Route-Mate
+cp deploy/.env.vps.example deploy/.env.vps
+```
+
+Edit `deploy/.env.vps` with secure values for `DB_PASSWORD`, `JWT_SECRET`, and `CORS_ORIGIN`, then run:
+
+```bash
+./deploy/deploy-vps.sh
+```
+
+One-command update on the VPS working copy:
+
+```bash
+git pull --ff-only && ./deploy/deploy-vps.sh
+```
+
+Useful VPS commands:
+
+```bash
+# stack status
+docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml ps
+
+# API health from the VPS
+curl -fsS http://localhost/health
+
+# recent logs
+docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml logs api --tail=200
+docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml logs nginx --tail=200
+docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml logs postgres --tail=200
+```
+
 Auth endpoints:
 
 - `POST /auth/register` (email, name, password)
