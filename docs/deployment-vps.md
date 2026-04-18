@@ -9,23 +9,35 @@ This guide is the MVP deployment path for a single VPS.
 
 ## 1) Near one-click Ubuntu deploy (recommended)
 
-From a fresh Ubuntu VPS:
+From a fresh Ubuntu/Debian VPS (single command):
 
 ```bash
-git clone https://github.com/mkmk749278/Route-Mate.git
-cd Route-Mate
-./deploy/bootstrap-vps-ubuntu.sh
+curl -fsSL https://raw.githubusercontent.com/mkmk749278/Route-Mate/main/deploy/bootstrap-vps.sh | bash
 ```
 
 What this automates:
 
 - installs `git`, `curl`, `ca-certificates`, Docker Engine, Docker Compose plugin
+- clones repository when missing, or updates existing checkout safely
 - creates `deploy/.env.vps` from `deploy/.env.vps.example` when missing
 - auto-generates strong values for missing/placeholder `DB_PASSWORD` and `JWT_SECRET`
 - starts the production stack and runs localhost `/health` checks
 
-After first deploy, set `CORS_ORIGIN` in `deploy/.env.vps` to your frontend/app origin(s).  
-If `CORS_ORIGIN` is blank, API CORS is intentionally permissive (`allow-all`).
+Optional flags:
+
+- `--repo-dir <path>`
+- `--repo-ref <branch-or-tag>`
+- `--non-interactive` / `--interactive`
+- `--no-auto-secrets`
+- `--cors-origin <origin[,origin2]>`
+
+If `CORS_ORIGIN` is blank, API CORS is intentionally permissive (`allow-all`) and the deploy output calls this out explicitly.
+
+Update/redeploy on an existing VPS checkout:
+
+```bash
+~/Route-Mate/deploy/bootstrap-vps.sh
+```
 
 ## 2) Manual/advanced deployment command
 
@@ -49,6 +61,7 @@ Useful flags:
 - `--env-file <path>`
 - `--compose-file <path>`
 - `--no-auto-secrets` (require manual secret values)
+- `--cors-origin <origin[,origin2]>`
 
 Manual fallback:
 

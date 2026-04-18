@@ -7,21 +7,27 @@ This directory contains the first-pass deployment assets for a single VPS rollou
 - `docker-compose.vps.yml` — production-oriented Compose stack (`postgres`, `api`, `nginx`)
 - `nginx/route-mates.conf` — reverse proxy template for the API
 - `.env.vps.example` — required environment variables for VPS deployment
-- `bootstrap-vps-ubuntu.sh` — Ubuntu bootstrap helper for near one-click VPS deployment
+- `bootstrap-vps.sh` — Ubuntu/Debian bootstrap entrypoint for near zero-touch VPS deployment
 
 Redis is intentionally not part of this MVP deployment stack because it is not used by the current backend runtime.
 
 ## One-command deployment (primary path)
 
-Fresh Ubuntu VPS bootstrap:
+Fresh Ubuntu/Debian VPS bootstrap:
 
 ```bash
-git clone https://github.com/mkmk749278/Route-Mate.git
-cd Route-Mate
-./deploy/bootstrap-vps-ubuntu.sh
+curl -fsSL https://raw.githubusercontent.com/mkmk749278/Route-Mate/main/deploy/bootstrap-vps.sh | bash
 ```
 
-This near one-click path installs Docker + Compose on Ubuntu, bootstraps `deploy/.env.vps`, generates strong secrets when needed, then runs deployment.
+This path installs Docker + Compose, clones/updates the repo checkout, bootstraps `deploy/.env.vps`, generates strong secrets when needed, then runs deployment.
+
+Default assumptions (printed by the script):
+
+- repository URL: `https://github.com/mkmk749278/Route-Mate.git`
+- checkout directory: `$HOME/Route-Mate`
+- git ref: `main`
+- non-interactive mode with secret auto-generation enabled
+- no `CORS_ORIGIN` override (blank remains permissive)
 
 Manual/advanced path from repository root:
 
@@ -34,16 +40,16 @@ Manual/advanced path from repository root:
 - creates env file from template when missing (`deploy/.env.vps` from `deploy/.env.vps.example`)
 - validates required values and blocks placeholder secrets
 - auto-generates strong URL-safe `DB_PASSWORD` and `JWT_SECRET` when missing/placeholder
-- supports `--non-interactive`, `--env-file`, `--env-template`, `--compose-file`, `--no-auto-secrets`
+- supports `--non-interactive`, `--env-file`, `--env-template`, `--compose-file`, `--no-auto-secrets`, `--cors-origin`
 - runs `docker compose ... up -d --build --remove-orphans`, prints status, and performs localhost `/health` check
 
 ## One-command update (existing VPS checkout)
 
 ```bash
-git pull --ff-only && ./deploy/deploy-vps.sh
+~/Route-Mate/deploy/bootstrap-vps.sh
 ```
 
-Use this after changing `deploy/.env.vps` or pulling newer application code on the VPS.
+Use this to safely update/redeploy; it refreshes the repo and re-runs deployment idempotently.
 
 ## Minimal VPS prerequisites
 
@@ -60,6 +66,16 @@ If needed, run manually:
 ```bash
 curl -fsS http://<vps-ip>/health
 docker compose --env-file deploy/.env.vps -f deploy/docker-compose.vps.yml ps
+```
+
+Optional override examples:
+
+```bash
+# deploy from a custom checkout location
+curl -fsSL https://raw.githubusercontent.com/mkmk749278/Route-Mate/main/deploy/bootstrap-vps.sh | bash -s -- --repo-dir /opt/route-mate
+
+# set CORS at deploy time without manual env editing
+~/Route-Mate/deploy/bootstrap-vps.sh --cors-origin https://app.example.com
 ```
 
 ## Manual compose command (fallback)

@@ -80,19 +80,18 @@ Production validation checklist: `docs/production-validation-smoke-test.md`.
 Operations runbook: `docs/operations-runbook.md`.
 PostgreSQL backup/restore baseline: `docs/postgresql-backup-restore.md`.
 
-## Ubuntu VPS quick deploy
+## Ubuntu VPS zero-touch deploy
 
-On a fresh Ubuntu VPS:
+Fresh Ubuntu VPS (single command):
 
 ```bash
-git clone https://github.com/mkmk749278/Route-Mate.git
-cd Route-Mate
-./deploy/bootstrap-vps-ubuntu.sh
+curl -fsSL https://raw.githubusercontent.com/mkmk749278/Route-Mate/main/deploy/bootstrap-vps.sh | bash
 ```
 
 What gets automated:
 
 - installs VPS prerequisites (Ubuntu/Debian: `git`, `curl`, `ca-certificates`, Docker Engine, Docker Compose plugin)
+- clones or updates the repository checkout
 - creates `deploy/.env.vps` from `deploy/.env.vps.example` if missing
 - auto-generates strong values for missing/placeholder `DB_PASSWORD` and `JWT_SECRET`
 - runs `./deploy/deploy-vps.sh` to build/start the stack, print status, and run `/health`
@@ -102,10 +101,10 @@ What still needs your intentional input:
 - set `CORS_ORIGIN` in `deploy/.env.vps` to your real frontend/app origin(s).  
   Leaving it blank is supported but intentionally enables permissive CORS (`allow-all`).
 
-One-command update on the VPS working copy:
+Update/redeploy on an existing VPS checkout:
 
 ```bash
-git pull --ff-only && ./deploy/deploy-vps.sh
+./deploy/bootstrap-vps.sh
 ```
 
 Useful VPS commands:

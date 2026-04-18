@@ -14,6 +14,8 @@ COMPOSE_FILE="${DEFAULT_COMPOSE_FILE}"
 AUTO_SECRETS="true"
 NON_INTERACTIVE="false"
 RUN_HEALTH_CHECK="true"
+CORS_ORIGIN_OVERRIDE=""
+HAS_CORS_ORIGIN_OVERRIDE="false"
 
 log() {
   printf '%s\n' "$*"
@@ -39,6 +41,7 @@ Options:
   --non-interactive       Never prompt; fail with actionable errors when required input is missing
   --auto-secrets          Auto-generate missing/placeholder DB_PASSWORD and JWT_SECRET (default)
   --no-auto-secrets       Disable auto-generation of secrets
+  --cors-origin <value>   Override CORS_ORIGIN in env file (comma-separated origins, blank keeps permissive mode)
   --skip-health-check     Skip localhost health check
   -h, --help              Show this help message
 USAGE
@@ -86,6 +89,12 @@ parse_args() {
       --skip-health-check)
         RUN_HEALTH_CHECK="false"
         shift
+        ;;
+      --cors-origin)
+        [[ $# -ge 2 ]] || fail "--cors-origin requires a value"
+        CORS_ORIGIN_OVERRIDE="$2"
+        HAS_CORS_ORIGIN_OVERRIDE="true"
+        shift 2
         ;;
       -h|--help)
         usage
@@ -305,6 +314,22 @@ ensure_secret_value() {
   fi
 }
 
+apply_cors_origin_override() {
+  if [[ "${HAS_CORS_ORIGIN_OVERRIDE}" != "true" ]]; then
+    return 0
+  fi
+
+  if [[ -n "${CORS_ORIGIN_OVERRIDE//[[:space:]]/}" ]]; then
+    validate_cors_origin_list "${CORS_ORIGIN_OVERRIDE}" || fail "--cors-origin must be a comma-separated list of http(s) origins."
+    set_env_value "CORS_ORIGIN" "${CORS_ORIGIN_OVERRIDE}" "${ENV_FILE}"
+    log "==> Set CORS_ORIGIN from command option"
+    return 0
+  fi
+
+  set_env_value "CORS_ORIGIN" "" "${ENV_FILE}"
+  warn "CORS_ORIGIN was explicitly set to blank via --cors-origin; API CORS will be permissive."
+}
+
 handle_cors_origin() {
   local cors_origin=""
   local answer=""
@@ -342,6 +367,7 @@ prepare_environment() {
 
   ensure_secret_value "DB_PASSWORD" 16 "DB password"
   ensure_secret_value "JWT_SECRET" 16 "JWT secret"
+  apply_cors_origin_override
   handle_cors_origin
 }
 
