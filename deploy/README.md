@@ -14,6 +14,8 @@ Redis is intentionally not part of this MVP deployment stack because it is not u
 
 Fresh Ubuntu VPS bootstrap:
 
+Review `get-docker.sh` before running it with `sudo sh`, or use Docker's official Ubuntu package-install flow if you need a stricter setup process.
+
 ```bash
 sudo apt-get update && sudo apt-get install -y git curl ca-certificates
 curl -fsSL https://get.docker.com -o get-docker.sh

@@ -84,6 +84,8 @@ PostgreSQL backup/restore baseline: `docs/postgresql-backup-restore.md`.
 
 On a fresh Ubuntu VPS:
 
+Review `get-docker.sh` before running it with `sudo sh`, or replace that step with Docker's official Ubuntu package-install flow if you need stricter change control.
+
 ```bash
 sudo apt-get update && sudo apt-get install -y git curl ca-certificates
 curl -fsSL https://get.docker.com -o get-docker.sh
