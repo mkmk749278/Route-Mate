@@ -20,6 +20,8 @@ git clone https://github.com/mkmk749278/Route-Mate.git
 cd Route-Mate
 ```
 
+Review the Docker install script before running it, or use the equivalent packages from Docker's official Ubuntu installation guide if you need a more controlled setup path.
+
 From repository root:
 
 1. Create and edit host-side env values:

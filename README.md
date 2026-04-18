@@ -91,6 +91,8 @@ cd Route-Mate
 cp deploy/.env.vps.example deploy/.env.vps
 ```
 
+Review the Docker install script before running it, or replace that step with the equivalent packages from the official Docker Ubuntu install guide if your environment requires stricter change control.
+
 Edit `deploy/.env.vps` with secure values for `DB_PASSWORD`, `JWT_SECRET`, and `CORS_ORIGIN`, then run:
 
 ```bash
