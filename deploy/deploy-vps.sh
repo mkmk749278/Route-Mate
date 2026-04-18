@@ -98,11 +98,7 @@ parse_args() {
   done
 
   if [[ -z "${ENV_TEMPLATE}" ]]; then
-    if [[ -f "${ENV_FILE}.example" ]]; then
-      ENV_TEMPLATE="${ENV_FILE}.example"
-    else
-      ENV_TEMPLATE="${DEFAULT_ENV_TEMPLATE}"
-    fi
+    ENV_TEMPLATE="${DEFAULT_ENV_TEMPLATE}"
   fi
 }
 
@@ -137,7 +133,7 @@ set_env_value() {
   tmp_file="$(mktemp)"
   awk -v k="${key}" -v v="${value}" '
     BEGIN { replaced=0 }
-    $0 ~ ("^" k "=") { print k "=" v; replaced=1; next }
+    index($0, k "=") == 1 { print k "=" v; replaced=1; next }
     { print }
     END { if (!replaced) print k "=" v }
   ' "${file}" >"${tmp_file}"
@@ -166,10 +162,13 @@ is_placeholder_or_empty() {
 generate_urlsafe_secret() {
   local min_length="${1:-48}"
   local secret=""
+  local bytes_needed
 
   if command -v openssl >/dev/null 2>&1; then
+    # Base64 expands data by 4/3; +3 ensures rounded-up division by 4.
+    bytes_needed=$(((min_length * 3 + 3) / 4))
     while [[ ${#secret} -lt ${min_length} ]]; do
-      secret+="$(openssl rand -base64 48 | tr -d '\n=' | tr '/+' '_-')"
+      secret+="$(openssl rand -base64 "${bytes_needed}" | tr -d '\n=' | tr '/+' '_-')"
     done
     printf '%s' "${secret:0:${min_length}}"
     return 0
@@ -194,6 +193,37 @@ PY
 
 is_interactive() {
   [[ "${NON_INTERACTIVE}" == "false" && -t 0 && -t 1 ]]
+}
+
+validate_cors_origin_list() {
+  local value="$1"
+  local remaining
+  local origin
+  local trimmed
+
+  remaining="${value}"
+  while true; do
+    origin="${remaining%%,*}"
+    if [[ "${remaining}" == *","* ]]; then
+      remaining="${remaining#*,}"
+    else
+      remaining=""
+    fi
+
+    trimmed="$(printf '%s' "${origin}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+    if [[ -z "${trimmed}" ]]; then
+      [[ -n "${remaining}" ]] || break
+      continue
+    fi
+
+    if [[ ! "${trimmed}" =~ ^https?://[^[:space:]/?#]+(:[0-9]+)?$ ]]; then
+      return 1
+    fi
+
+    [[ -n "${remaining}" ]] || break
+  done
+
+  return 0
 }
 
 bootstrap_env_file() {
@@ -243,13 +273,18 @@ ensure_secret_value() {
   local key="$1"
   local min_length="$2"
   local friendly_name="$3"
+  local generated_length="$min_length"
   local current_value=""
+
+  if [[ "${generated_length}" -lt 48 ]]; then
+    generated_length=48
+  fi
 
   current_value="$(get_env_value "${key}" "${ENV_FILE}" || true)"
 
   if is_placeholder_or_empty "${current_value}"; then
     if [[ "${AUTO_SECRETS}" == "true" ]]; then
-      current_value="$(generate_urlsafe_secret 48)"
+      current_value="$(generate_urlsafe_secret "${generated_length}")"
       set_env_value "${key}" "${current_value}" "${ENV_FILE}"
       log "==> Generated ${friendly_name} and saved it to ${ENV_FILE}"
       return 0
@@ -276,14 +311,19 @@ handle_cors_origin() {
 
   cors_origin="$(get_env_value "CORS_ORIGIN" "${ENV_FILE}" || true)"
 
+  if [[ -n "${cors_origin//[[:space:]]/}" ]]; then
+    validate_cors_origin_list "${cors_origin}" || fail "CORS_ORIGIN in ${ENV_FILE} must be a comma-separated list of http(s) origins."
+  fi
+
   if [[ -z "${cors_origin//[[:space:]]/}" ]]; then
-    warn "CORS_ORIGIN is empty. API CORS will allow all origins."
+    warn "SECURITY WARNING: CORS_ORIGIN is empty. API will accept requests from any origin."
 
     if is_interactive; then
       read -r -p "Continue with permissive CORS for now? [y/N]: " answer
       if [[ ! "${answer}" =~ ^[Yy]$ ]]; then
-        read -r -p "Enter CORS_ORIGIN (example: https://api.example.com): " cors_origin
+        read -r -p "Enter CORS_ORIGIN (example: https://app.example.com): " cors_origin
         [[ -n "${cors_origin//[[:space:]]/}" ]] || fail "CORS_ORIGIN cannot be blank after declining permissive CORS."
+        validate_cors_origin_list "${cors_origin}" || fail "CORS_ORIGIN must use http:// or https:// values, comma-separated if multiple."
         set_env_value "CORS_ORIGIN" "${cors_origin}" "${ENV_FILE}"
         log "==> Saved CORS_ORIGIN to ${ENV_FILE}"
       fi

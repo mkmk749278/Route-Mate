@@ -8,6 +8,7 @@ DEPLOY_SCRIPT="${REPO_ROOT}/deploy/deploy-vps.sh"
 AUTO_SECRETS="true"
 NON_INTERACTIVE="true"
 SKIP_DEPLOY="false"
+TMP_DOCKER_INSTALL_DIR=""
 
 log() {
   printf '%s\n' "$*"
@@ -16,6 +17,12 @@ log() {
 fail() {
   printf 'ERROR: %s\n' "$*" >&2
   exit 1
+}
+
+cleanup() {
+  if [[ -n "${TMP_DOCKER_INSTALL_DIR}" && -d "${TMP_DOCKER_INSTALL_DIR}" ]]; then
+    rm -rf "${TMP_DOCKER_INSTALL_DIR}"
+  fi
 }
 
 usage() {
@@ -82,7 +89,7 @@ validate_platform() {
   # shellcheck source=/dev/null
   source /etc/os-release
 
-  if [[ "${ID:-}" != "ubuntu" && "${ID_LIKE:-}" != *"debian"* ]]; then
+  if [[ "${ID:-}" != "ubuntu" && "${ID:-}" != "debian" && "${ID_LIKE:-}" != *"debian"* ]]; then
     fail "Unsupported distro: ${ID:-unknown}. Use this script on Ubuntu (or Debian-like) VPS only."
   fi
 
@@ -100,10 +107,11 @@ install_docker_if_needed() {
     log "==> Docker already installed"
   else
     log "==> Installing Docker Engine"
-    local tmp_dir="/tmp/route-mates-bootstrap"
-    mkdir -p "${tmp_dir}"
-    curl -fsSL https://get.docker.com -o "${tmp_dir}/get-docker.sh"
-    run_privileged sh "${tmp_dir}/get-docker.sh"
+    TMP_DOCKER_INSTALL_DIR="$(mktemp -d)"
+    log "==> Downloading Docker's official convenience installer (https://get.docker.com)"
+    log "==> Review Docker's official installation documentation if your environment requires stricter change control."
+    curl -fsSL https://get.docker.com -o "${TMP_DOCKER_INSTALL_DIR}/get-docker.sh"
+    run_privileged sh "${TMP_DOCKER_INSTALL_DIR}/get-docker.sh"
   fi
 
   if command -v systemctl >/dev/null 2>&1; then
@@ -144,6 +152,7 @@ run_deploy() {
 }
 
 main() {
+  trap cleanup EXIT
   parse_args "$@"
   validate_platform
   install_base_packages
