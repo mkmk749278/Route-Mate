@@ -7,6 +7,7 @@ This directory contains the first-pass deployment assets for a single VPS rollou
 - `docker-compose.vps.yml` — production-oriented Compose stack (`postgres`, `api`, `nginx`)
 - `nginx/route-mates.conf` — reverse proxy template for the API
 - `.env.vps.example` — required environment variables for VPS deployment
+- `bootstrap-vps-ubuntu.sh` — Ubuntu bootstrap helper for near one-click VPS deployment
 
 Redis is intentionally not part of this MVP deployment stack because it is not used by the current backend runtime.
 
@@ -14,33 +15,27 @@ Redis is intentionally not part of this MVP deployment stack because it is not u
 
 Fresh Ubuntu VPS bootstrap:
 
-Review `get-docker.sh` before running it with `sudo sh`, or use Docker's official Ubuntu package-install flow if you need a stricter setup process.
-
 ```bash
-sudo apt-get update && sudo apt-get install -y git curl ca-certificates
-curl -fsSL https://get.docker.com -o get-docker.sh
-less get-docker.sh
-sudo sh get-docker.sh
-sudo systemctl enable --now docker
 git clone https://github.com/mkmk749278/Route-Mate.git
 cd Route-Mate
+./deploy/bootstrap-vps-ubuntu.sh
 ```
 
-From repository root:
+This near one-click path installs Docker + Compose on Ubuntu, bootstraps `deploy/.env.vps`, generates strong secrets when needed, then runs deployment.
 
-1. Create and edit host-side env values:
-
-```bash
-cp deploy/.env.vps.example deploy/.env.vps
-```
-
-2. Run deployment:
+Manual/advanced path from repository root:
 
 ```bash
 ./deploy/deploy-vps.sh
 ```
 
-The script validates Docker + Docker Compose availability, checks required deployment files, runs Compose build/up, prints service status, and runs a localhost health check (with retries) when `curl` is installed.
+`deploy-vps.sh` automation behavior:
+
+- creates env file from template when missing (`deploy/.env.vps` from `deploy/.env.vps.example`)
+- validates required values and blocks placeholder secrets
+- auto-generates strong URL-safe `DB_PASSWORD` and `JWT_SECRET` when missing/placeholder
+- supports `--non-interactive`, `--env-file`, `--env-template`, `--compose-file`, `--no-auto-secrets`
+- runs `docker compose ... up -d --build --remove-orphans`, prints status, and performs localhost `/health` check
 
 ## One-command update (existing VPS checkout)
 
@@ -54,7 +49,7 @@ Use this after changing `deploy/.env.vps` or pulling newer application code on t
 
 - Docker Engine installed and running
 - Docker Compose plugin available (`docker compose`)
-- `deploy/.env.vps` created with secure host-side values
+- `deploy/.env.vps` (auto-created when missing by `deploy-vps.sh`)
 
 ## Immediate verification
 

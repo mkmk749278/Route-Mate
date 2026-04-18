@@ -84,24 +84,23 @@ PostgreSQL backup/restore baseline: `docs/postgresql-backup-restore.md`.
 
 On a fresh Ubuntu VPS:
 
-Review `get-docker.sh` before running it with `sudo sh`, or replace that step with Docker's official Ubuntu package-install flow if you need stricter change control.
-
 ```bash
-sudo apt-get update && sudo apt-get install -y git curl ca-certificates
-curl -fsSL https://get.docker.com -o get-docker.sh
-less get-docker.sh
-sudo sh get-docker.sh
-sudo systemctl enable --now docker
 git clone https://github.com/mkmk749278/Route-Mate.git
 cd Route-Mate
-cp deploy/.env.vps.example deploy/.env.vps
+./deploy/bootstrap-vps-ubuntu.sh
 ```
 
-Edit `deploy/.env.vps` with secure values for `DB_PASSWORD`, `JWT_SECRET`, and `CORS_ORIGIN`, then run:
+What gets automated:
 
-```bash
-./deploy/deploy-vps.sh
-```
+- installs VPS prerequisites (Ubuntu/Debian: `git`, `curl`, `ca-certificates`, Docker Engine, Docker Compose plugin)
+- creates `deploy/.env.vps` from `deploy/.env.vps.example` if missing
+- auto-generates strong values for missing/placeholder `DB_PASSWORD` and `JWT_SECRET`
+- runs `./deploy/deploy-vps.sh` to build/start the stack, print status, and run `/health`
+
+What still needs your intentional input:
+
+- set `CORS_ORIGIN` in `deploy/.env.vps` to your real frontend/app origin(s).  
+  Leaving it blank is supported but intentionally enables permissive CORS (`allow-all`).
 
 One-command update on the VPS working copy:
 

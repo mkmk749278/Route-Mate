@@ -4,28 +4,32 @@ This guide is the MVP deployment path for a single VPS.
 
 ## Prerequisites
 
-- Docker Engine + Docker Compose plugin installed on the VPS
 - Public DNS/domain pointed to VPS (recommended)
 - Ports open: `80` (and `443` once TLS is configured)
 
-## 1) Prepare deployment environment
+## 1) Near one-click Ubuntu deploy (recommended)
 
-From repository root:
+From a fresh Ubuntu VPS:
 
 ```bash
-cp deploy/.env.vps.example deploy/.env.vps
+git clone https://github.com/mkmk749278/Route-Mate.git
+cd Route-Mate
+./deploy/bootstrap-vps-ubuntu.sh
 ```
 
-Set secure values in `deploy/.env.vps`:
+What this automates:
 
-- `DB_PASSWORD`
-- `JWT_SECRET`
-- `CORS_ORIGIN` (for example `https://api.example.com`, or comma-separated origins if needed)
-  - leave blank only if you intentionally want permissive CORS (`allow-all`)
+- installs `git`, `curl`, `ca-certificates`, Docker Engine, Docker Compose plugin
+- creates `deploy/.env.vps` from `deploy/.env.vps.example` when missing
+- auto-generates strong values for missing/placeholder `DB_PASSWORD` and `JWT_SECRET`
+- starts the production stack and runs localhost `/health` checks
 
-## 2) Start production stack
+After first deploy, set `CORS_ORIGIN` in `deploy/.env.vps` to your frontend/app origin(s).  
+If `CORS_ORIGIN` is blank, API CORS is intentionally permissive (`allow-all`).
 
-Primary command (from repository root):
+## 2) Manual/advanced deployment command
+
+From repository root:
 
 ```bash
 ./deploy/deploy-vps.sh
@@ -33,9 +37,18 @@ Primary command (from repository root):
 
 What this script does:
 - validates Docker + Docker Compose availability
-- validates `deploy/.env.vps` and `deploy/docker-compose.vps.yml`
+- bootstraps `deploy/.env.vps` from template when missing
+- validates required env values and blocks placeholder secrets
+- can auto-generate strong secrets (`DB_PASSWORD`, `JWT_SECRET`)
 - runs `docker compose ... up -d --build --remove-orphans`
 - prints stack status and runs a retrying `curl http://localhost/health` check when available
+
+Useful flags:
+
+- `--non-interactive` (no prompts; fail fast with actionable errors)
+- `--env-file <path>`
+- `--compose-file <path>`
+- `--no-auto-secrets` (require manual secret values)
 
 Manual fallback:
 
