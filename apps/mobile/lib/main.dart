@@ -9,7 +9,7 @@ import 'package:route_mates_mobile/features/shared/state/app_controller.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final apiClient = ApiClient(baseUrl: AppConfig.apiBaseUrl);
+  final apiClient = ApiClient(baseUrl: AppConfig.resolveApiBaseUrl());
   final api = RouteMatesApi(apiClient);
   final tokenStorage = SharedPrefsAuthTokenStorage();
   final controller = AppController(api: api, tokenStorage: tokenStorage);
