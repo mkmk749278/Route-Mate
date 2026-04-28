@@ -33,6 +33,7 @@ import retrofit2.http.Query
 )
 
 @Serializable data class AuthExchange(val id_token: String)
+@Serializable data class DevLoginRequest(val phone: String, val name: String? = null)
 @Serializable data class AuthResult(val token: String, val user: MeOut)
 
 @Serializable data class RideCreate(
@@ -82,6 +83,9 @@ import retrofit2.http.Query
 interface RouteMatesApi {
     @POST("v1/auth/exchange")
     suspend fun exchange(@Body body: AuthExchange): AuthResult
+
+    @POST("v1/auth/dev-login")
+    suspend fun devLogin(@Body body: DevLoginRequest): AuthResult
 
     @GET("v1/me")
     suspend fun me(): MeOut

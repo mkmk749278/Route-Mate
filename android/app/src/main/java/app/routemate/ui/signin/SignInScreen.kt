@@ -11,6 +11,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -27,9 +28,8 @@ fun SignInScreen(
 ) {
     val state by vm.state.collectAsState()
 
-    if (state is SignInState.Done) {
-        onSignedIn()
-        return
+    LaunchedEffect(state) {
+        if (state is SignInState.Done) onSignedIn()
     }
 
     Column(
@@ -41,33 +41,25 @@ fun SignInScreen(
         Spacer(Modifier.height(24.dp))
 
         when (val s = state) {
-            is SignInState.PhoneEntry -> {
+            is SignInState.Idle -> {
                 OutlinedTextField(
                     value = s.phone,
                     onValueChange = vm::onPhoneChange,
                     label = { Text(stringResource(R.string.hint_phone)) },
+                    enabled = !s.busy,
                 )
                 Spacer(Modifier.height(16.dp))
-                Button(onClick = { vm.sendOtp() }, enabled = !s.busy) {
+                Button(
+                    onClick = vm::submit,
+                    enabled = !s.busy && s.phone.trim().length >= 4,
+                ) {
                     Text(stringResource(R.string.action_continue))
                 }
-            }
-            is SignInState.OtpEntry -> {
-                OutlinedTextField(
-                    value = s.code,
-                    onValueChange = vm::onCodeChange,
-                    label = { Text(stringResource(R.string.hint_otp)) },
-                )
-                Spacer(Modifier.height(16.dp))
-                Button(onClick = { vm.verifyOtp() }, enabled = !s.busy) {
-                    Text(stringResource(R.string.action_sign_in))
-                }
-                TextButton(onClick = { vm.back() }) { Text("Use a different number") }
             }
             is SignInState.Error -> {
                 Text(s.message)
                 Spacer(Modifier.height(8.dp))
-                TextButton(onClick = { vm.back() }) { Text("Try again") }
+                TextButton(onClick = vm::back) { Text("Try again") }
             }
             SignInState.Done -> Unit
         }
