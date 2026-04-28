@@ -45,12 +45,16 @@ jobs:
             echo "::error::ANDROID_KEYSTORE_BASE64 secret not set"
             exit 1
           fi
-          # Strip any whitespace introduced by copy-paste, then decode.
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > release.keystore
+          # Strip any character that isn't part of standard base64 (handles
+          # mobile-paste artifacts: zero-width chars, smart quotes, NBSP, etc.).
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -cd 'A-Za-z0-9+/=' > release.keystore.b64
+          b64_bytes=$(stat -c %s release.keystore.b64)
+          echo "::notice::sanitized base64 length=${b64_bytes}"
+          base64 -d release.keystore.b64 > release.keystore
           # Sanity check: keystore should be > 1 KB.
           ks_bytes=$(stat -c %s release.keystore)
           if [ "$ks_bytes" -lt 1000 ]; then
-            echo "::error::release.keystore is only ${ks_bytes} bytes — secret is likely truncated"
+            echo "::error::release.keystore is only ${ks_bytes} bytes (b64 was ${b64_bytes} chars) — secret is truncated or corrupt"
             exit 1
           fi
           cat > keystore.properties <<EOF
