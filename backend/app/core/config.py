@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     firebase_credentials_path: str | None = Field(default=None)
     cors_origins: list[str] = Field(default_factory=lambda: ["*"])
     location_ttl_seconds: int = Field(default=60)
+    dev_login_enabled: bool = Field(default=False)
 
 
 @lru_cache

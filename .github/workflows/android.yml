@@ -34,16 +34,6 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Decode google-services.json
-        env:
-          FIREBASE_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}
-        run: |
-          if [ -z "$FIREBASE_GOOGLE_SERVICES_JSON" ]; then
-            echo "::error::FIREBASE_GOOGLE_SERVICES_JSON secret not set"
-            exit 1
-          fi
-          echo "$FIREBASE_GOOGLE_SERVICES_JSON" | base64 -d > app/google-services.json
-
       - name: Decode signing keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

@@ -31,11 +31,14 @@ curl -fsSL https://raw.githubusercontent.com/<owner>/Route-Mate/main/infra/boots
       --domain api.example.com \
       --postgres-pass '<strong-pw>' \
       --jwt-secret '<32-byte-pw>' \
-      --ghcr-pat '<read:packages PAT>' \
-      --firebase-admin-base64 "$(base64 -w0 firebase-admin.json)"
+      --ghcr-pat '<read:packages PAT>'
 ```
 
 DNS the domain to the VPS first; Caddy issues TLS automatically on boot.
+
+v0.1 ships with `DEV_LOGIN_ENABLED=true` so the app can sign in without
+Firebase. To disable in production: edit `/opt/routemate/.env`, set
+`DEV_LOGIN_ENABLED=false`, run `docker compose up -d`.
 
 ## GitHub secrets to set (Settings → Secrets and variables → Actions)
 | Name | Used by |
@@ -47,15 +50,12 @@ DNS the domain to the VPS first; Caddy issues TLS automatically on boot.
 | `ANDROID_KEYSTORE_PASSWORD` | android.yml signing |
 | `ANDROID_KEY_ALIAS` | android.yml signing |
 | `ANDROID_KEY_PASSWORD` | android.yml signing |
-| `FIREBASE_GOOGLE_SERVICES_JSON` | android.yml (base64 of `google-services.json`) |
 | `API_BASE_URL` | android.yml (e.g. `https://api.example.com`) |
 
 `GITHUB_TOKEN` is provided automatically and is used to push the image to GHCR.
 
-`FIREBASE_ADMIN_SDK_JSON` is *not* a GitHub secret in v1 — it's written to
-`/opt/routemate/secrets/firebase-admin.json` once during VPS bootstrap, and
-mounted into the api container as a Docker secret. To rotate it, re-run the
-bootstrap snippet with a new `--firebase-admin-base64`.
+Firebase-related secrets (`FIREBASE_GOOGLE_SERVICES_JSON`, Admin SDK key)
+are deferred to v0.2 along with phone OTP.
 
 ## Local-free generation of the keystore
 From any phone with Termux or even a free GitHub Codespace:
