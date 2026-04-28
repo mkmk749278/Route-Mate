@@ -1,0 +1,13 @@
+# Build / IDE
+.gradle/
+build/
+.idea/
+.kotlin/
+local.properties
+*.iml
+
+# Secrets — must never be committed
+keystore.properties
+*.keystore
+*.jks
+app/google-services.json

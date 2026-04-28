@@ -1,0 +1,19 @@
+{
+  "_comment": "Replace at build time via FIREBASE_GOOGLE_SERVICES_JSON secret. Do NOT commit the real file.",
+  "project_info": {
+    "project_id": "routemate-example",
+    "project_number": "0",
+    "storage_bucket": "routemate-example.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:0:android:0",
+        "android_client_info": { "package_name": "app.routemate" }
+      },
+      "api_key": [{ "current_key": "FAKE" }],
+      "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+    }
+  ],
+  "configuration_version": "1"
+}

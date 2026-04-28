@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Route Mates</string>
+    <string name="tab_find">Find</string>
+    <string name="tab_offer">Offer</string>
+    <string name="tab_trips">Trips</string>
+    <string name="tab_profile">Profile</string>
+    <string name="action_sign_in">Sign in</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_post_ride">Post ride</string>
+    <string name="action_book">Book seat</string>
+    <string name="hint_phone">Phone number</string>
+    <string name="hint_otp">Verification code</string>
+    <string name="hint_origin">From</string>
+    <string name="hint_destination">To</string>
+    <string name="ride_active">Active ride</string>
+    <string name="loading">Loading…</string>
+</resources>

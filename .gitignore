@@ -1,0 +1,28 @@
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Backend
+__pycache__/
+*.pyc
+.venv/
+.env
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Android — handled in android/.gitignore too, but keep belt-and-braces
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/google-services.json
+android/keystore.properties
+*.keystore
+*.jks
+
+# Infra deploy artifacts
+infra/secrets/
+infra/.env
