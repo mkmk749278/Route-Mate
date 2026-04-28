@@ -1,0 +1,65 @@
+name: routemate
+
+services:
+  api:
+    image: ghcr.io/${GHCR_OWNER}/routemate-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://routemate:${POSTGRES_PASSWORD}@db:5432/routemate
+      REDIS_URL: redis://redis:6379/0
+      FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase-admin.json
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_started }
+    secrets:
+      - firebase-admin.json
+    networks: [internal]
+
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: routemate
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: routemate
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U routemate -d routemate"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks: [internal]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api]
+    networks: [internal]
+
+volumes:
+  pgdata: {}
+  caddy_data: {}
+  caddy_config: {}
+
+networks:
+  internal: {}
+
+secrets:
+  firebase-admin.json:
+    file: ./secrets/firebase-admin.json
