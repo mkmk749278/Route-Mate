@@ -5,41 +5,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas import BookingCreate, BookingOut, LatLng, RideCreate, RideOut
+from app.api.schemas import BookingCreate, BookingOut, RideCreate, RideOut
 from app.core.security import current_user_id
-from app.db.models import Booking, BookingStatus, Ride, RideStatus
+from app.db.models import Booking, Ride, RideStatus
 from app.db.session import get_session
-from app.services.geo import lonlat_from_wkb, st_point
+from app.services.geo import st_point
+from app.services.rides import ride_to_out, seats_taken
 
 router = APIRouter()
 
 SEARCH_RADIUS_METERS = 2000
-
-
-def _to_out(ride: Ride, seats_taken: int) -> RideOut:
-    o_lat, o_lng = lonlat_from_wkb(ride.origin)
-    d_lat, d_lng = lonlat_from_wkb(ride.destination)
-    return RideOut(
-        id=ride.id,
-        driver=ride.driver,
-        origin=LatLng(lat=o_lat, lng=o_lng),
-        destination=LatLng(lat=d_lat, lng=d_lng),
-        origin_label=ride.origin_label,
-        destination_label=ride.destination_label,
-        depart_at=ride.depart_at,
-        seats_total=ride.seats_total,
-        seats_available=max(0, ride.seats_total - seats_taken),
-        price_per_seat=ride.price_per_seat,
-        status=ride.status.value,
-        polyline=ride.polyline,
-    )
-
-
-async def _seats_taken(session: AsyncSession, ride_id: UUID) -> int:
-    q = select(func.coalesce(func.sum(Booking.seats), 0)).where(
-        Booking.ride_id == ride_id, Booking.status == BookingStatus.accepted
-    )
-    return int((await session.execute(q)).scalar_one())
 
 
 @router.post("", response_model=RideOut, status_code=status.HTTP_201_CREATED)
@@ -62,7 +37,7 @@ async def create_ride(
     session.add(ride)
     await session.commit()
     await session.refresh(ride)
-    return _to_out(ride, 0)
+    return ride_to_out(ride, 0)
 
 
 @router.get("/search", response_model=list[RideOut])
@@ -97,7 +72,7 @@ async def search_rides(
     rides = (await session.execute(stmt)).scalars().all()
     out: list[RideOut] = []
     for r in rides:
-        out.append(_to_out(r, await _seats_taken(session, r.id)))
+        out.append(ride_to_out(r, await seats_taken(session, r.id)))
     return out
 
 
@@ -109,7 +84,7 @@ async def get_ride(
     ride = await session.get(Ride, ride_id)
     if ride is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return _to_out(ride, await _seats_taken(session, ride.id))
+    return ride_to_out(ride, await seats_taken(session, ride.id))
 
 
 @router.post(
@@ -160,7 +135,7 @@ async def start_ride(
     ride.status = RideStatus.started
     await session.commit()
     await session.refresh(ride)
-    return _to_out(ride, await _seats_taken(session, ride.id))
+    return ride_to_out(ride, await seats_taken(session, ride.id))
 
 
 @router.post("/{ride_id}/complete", response_model=RideOut)
@@ -177,4 +152,4 @@ async def complete_ride(
     ride.status = RideStatus.completed
     await session.commit()
     await session.refresh(ride)
-    return _to_out(ride, await _seats_taken(session, ride.id))
+    return ride_to_out(ride, await seats_taken(session, ride.id))

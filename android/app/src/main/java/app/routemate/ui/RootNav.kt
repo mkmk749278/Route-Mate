@@ -17,14 +17,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import app.routemate.R
 import app.routemate.ui.find.FindScreen
 import app.routemate.ui.offer.OfferScreen
 import app.routemate.ui.profile.ProfileScreen
+import app.routemate.ui.ride.RideDetailScreen
 import app.routemate.ui.signin.SignInScreen
 import app.routemate.ui.trips.TripsScreen
 
@@ -84,9 +87,20 @@ fun RootNav() {
             composable("signin") { SignInScreen(onSignedIn = { nav.navigate(Tab.Find.route) { popUpTo("signin") { inclusive = true } } }) }
             composable(Tab.Find.route) { FindScreen() }
             composable(Tab.Offer.route) { OfferScreen() }
-            composable(Tab.Trips.route) { TripsScreen() }
+            composable(Tab.Trips.route) {
+                TripsScreen(onOpenRide = { id -> nav.navigate("ride/$id") })
+            }
             composable(Tab.Profile.route) {
                 ProfileScreen(onSignedOut = { nav.navigate("signin") { popUpTo(0) } })
+            }
+            composable(
+                route = "ride/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.StringType }),
+            ) { entry ->
+                RideDetailScreen(
+                    rideId = entry.arguments?.getString("id") ?: return@composable,
+                    onBack = { nav.popBackStack() },
+                )
             }
         }
     }
