@@ -43,4 +43,13 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew :app:assembleDebug -PAPI_BASE_URL=https://api.example.com --no-daemon
+      - run: ./gradlew :app:assembleDebug -PAPI_BASE_URL=https://api.example.com --no-daemon --stacktrace
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-reports
+          path: |
+            android/app/build/reports/
+            android/build/reports/
+          if-no-files-found: ignore
