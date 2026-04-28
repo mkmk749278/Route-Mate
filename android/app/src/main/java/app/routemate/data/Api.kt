@@ -80,6 +80,8 @@ import retrofit2.http.Query
 
 @Serializable data class FcmRegister(val token: String, val platform: String = "android")
 
+@Serializable data class GeocodeHit(val label: String, val lat: Double, val lng: Double)
+
 interface RouteMatesApi {
     @POST("v1/auth/exchange")
     suspend fun exchange(@Body body: AuthExchange): AuthResult
@@ -135,4 +137,10 @@ interface RouteMatesApi {
 
     @POST("v1/devices/fcm")
     suspend fun registerFcm(@Body body: FcmRegister): Map<String, Boolean>
+
+    @GET("v1/geocode")
+    suspend fun geocode(
+        @Query("q") q: String,
+        @Query("limit") limit: Int = 5,
+    ): List<GeocodeHit>
 }

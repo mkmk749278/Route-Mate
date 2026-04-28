@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, bookings, devices, me, ratings, rides
+from app.api import auth, bookings, devices, geocode, me, ratings, rides
 from app.core.config import settings
 from app.core.firebase import init_firebase
 from app.db.session import dispose_engine
@@ -39,4 +39,5 @@ app.include_router(rides.router, prefix="/v1/rides", tags=["rides"])
 app.include_router(bookings.router, prefix="/v1/bookings", tags=["bookings"])
 app.include_router(ratings.router, prefix="/v1/rides", tags=["ratings"])
 app.include_router(devices.router, prefix="/v1/devices", tags=["devices"])
+app.include_router(geocode.router, prefix="/v1/geocode", tags=["geocode"])
 app.include_router(ws_router, prefix="/v1/ws", tags=["ws"])
