@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(default_factory=lambda: ["*"])
     location_ttl_seconds: int = Field(default=60)
     dev_login_enabled: bool = Field(default=False)
+    nominatim_base_url: str = Field(default="https://nominatim.openstreetmap.org")
+    nominatim_user_agent: str = Field(default="RouteMates/0.2 (contact@routemate.app)")
+    geocode_cache_ttl_seconds: int = Field(default=7 * 24 * 3600)
+    geocode_min_interval_ms: int = Field(default=1100)
 
 
 @lru_cache
