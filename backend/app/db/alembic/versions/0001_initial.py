@@ -31,10 +31,11 @@ def upgrade() -> None:
     )
     op.create_index("ix_users_phone", "users", ["phone"])
 
-    ride_status = sa.Enum(
-        "scheduled", "started", "completed", "cancelled", name="ride_status"
+    ride_status = postgresql.ENUM(
+        "scheduled", "started", "completed", "cancelled",
+        name="ride_status", create_type=False,
     )
-    ride_status.create(op.get_bind())
+    ride_status.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "rides",
@@ -61,10 +62,11 @@ def upgrade() -> None:
     op.execute("CREATE INDEX ix_rides_origin_gix ON rides USING GIST (origin)")
     op.execute("CREATE INDEX ix_rides_destination_gix ON rides USING GIST (destination)")
 
-    booking_status = sa.Enum(
-        "pending", "accepted", "rejected", "cancelled", name="booking_status"
+    booking_status = postgresql.ENUM(
+        "pending", "accepted", "rejected", "cancelled",
+        name="booking_status", create_type=False,
     )
-    booking_status.create(op.get_bind())
+    booking_status.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "bookings",
@@ -155,5 +157,5 @@ def downgrade() -> None:
     op.drop_table("bookings")
     op.drop_table("rides")
     op.drop_table("users")
-    sa.Enum(name="booking_status").drop(op.get_bind())
-    sa.Enum(name="ride_status").drop(op.get_bind())
+    sa.Enum(name="booking_status").drop(op.get_bind(), checkfirst=True)
+    sa.Enum(name="ride_status").drop(op.get_bind(), checkfirst=True)
