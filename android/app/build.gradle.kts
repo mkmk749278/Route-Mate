@@ -8,7 +8,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.google.services)
+}
+
+// google-services.json is decoded from a GitHub secret only in the release
+// workflow. Apply the plugin lazily so debug / CI builds without secrets
+// still compile.
+if (project.file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 val keystorePropsFile = rootProject.file("keystore.properties")

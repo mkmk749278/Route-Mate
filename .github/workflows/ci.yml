@@ -43,6 +43,4 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
       - uses: gradle/actions/setup-gradle@v4
-      - name: Stub google-services.json
-        run: cp app/google-services.json.example app/google-services.json
       - run: ./gradlew :app:assembleDebug -PAPI_BASE_URL=https://api.example.com --no-daemon
