@@ -88,17 +88,30 @@ fun RootNav() {
             composable(Tab.Find.route) { FindScreen() }
             composable(Tab.Offer.route) { OfferScreen() }
             composable(Tab.Trips.route) {
-                TripsScreen(onOpenRide = { id -> nav.navigate("ride/$id") })
+                TripsScreen(
+                    onOpenRide = { id -> nav.navigate("ride/$id") },
+                    onOpenRideRating = { id, target ->
+                        nav.navigate("ride/$id?rateTarget=$target")
+                    },
+                )
             }
             composable(Tab.Profile.route) {
                 ProfileScreen(onSignedOut = { nav.navigate("signin") { popUpTo(0) } })
             }
             composable(
-                route = "ride/{id}",
-                arguments = listOf(navArgument("id") { type = NavType.StringType }),
+                route = "ride/{id}?rateTarget={rateTarget}",
+                arguments = listOf(
+                    navArgument("id") { type = NavType.StringType },
+                    navArgument("rateTarget") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
             ) { entry ->
                 RideDetailScreen(
                     rideId = entry.arguments?.getString("id") ?: return@composable,
+                    rateTargetUserId = entry.arguments?.getString("rateTarget"),
                     onBack = { nav.popBackStack() },
                 )
             }

@@ -2,6 +2,7 @@ package app.routemate.ui.trips
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.routemate.data.RatingPrompt
 import app.routemate.data.RideBooking
 import app.routemate.data.RideOut
 import app.routemate.data.RideRepository
@@ -16,11 +17,13 @@ data class TripsState(
     val driving: List<RideOut> = emptyList(),
     val riding: List<RideBooking> = emptyList(),
     val awaitingRating: List<RideBooking> = emptyList(),
+    val awaitingDriverRating: List<RatingPrompt> = emptyList(),
     val busy: Boolean = false,
     val error: String? = null,
 ) {
     val isEmpty: Boolean get() =
-        driving.isEmpty() && riding.isEmpty() && awaitingRating.isEmpty()
+        driving.isEmpty() && riding.isEmpty()
+            && awaitingRating.isEmpty() && awaitingDriverRating.isEmpty()
 }
 
 @HiltViewModel
@@ -40,6 +43,7 @@ class TripsViewModel @Inject constructor(
                         driving = it.driving,
                         riding = it.riding,
                         awaitingRating = it.awaiting_rating,
+                        awaitingDriverRating = it.awaiting_driver_rating,
                     )
                 }
                 .onFailure {

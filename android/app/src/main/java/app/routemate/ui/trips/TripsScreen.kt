@@ -24,12 +24,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import app.routemate.data.RatingPrompt
 import app.routemate.data.RideBooking
 import app.routemate.data.RideOut
 
 @Composable
 fun TripsScreen(
     onOpenRide: (rideId: String) -> Unit,
+    onOpenRideRating: (rideId: String, targetUserId: String) -> Unit,
     vm: TripsViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(Unit) { vm.load() }
@@ -67,6 +69,12 @@ fun TripsScreen(
                 item { SectionHeader("Rate your recent rides") }
                 items(state.awaitingRating, key = { "ar-${it.booking.id}" }) { rb ->
                     RidingCard(rb) { onOpenRide(rb.ride.id) }
+                }
+            }
+            if (state.awaitingDriverRating.isNotEmpty()) {
+                item { SectionHeader("Rate your riders") }
+                items(state.awaitingDriverRating, key = { "drr-${it.ride.id}-${it.target.id}" }) { p ->
+                    RatePromptCard(p) { onOpenRideRating(p.ride.id, p.target.id) }
                 }
             }
         }
@@ -131,6 +139,28 @@ private fun RidingCard(rb: RideBooking, onClick: () -> Unit) {
                 "${rb.booking.seats} seat(s) · ₹${rb.ride.price_per_seat}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RatePromptCard(prompt: RatingPrompt, onClick: () -> Unit) {
+    Card(
+        Modifier.padding(vertical = 4.dp).fillMaxWidth().clickable(onClick = onClick),
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Text(
+                "Rate ${prompt.target.name ?: "your rider"}",
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                "${prompt.ride.origin_label}  →  ${prompt.ride.destination_label}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

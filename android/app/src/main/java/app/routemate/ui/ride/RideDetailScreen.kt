@@ -58,10 +58,11 @@ import org.osmdroid.views.overlay.Marker
 @Composable
 fun RideDetailScreen(
     rideId: String,
+    rateTargetUserId: String? = null,
     onBack: () -> Unit,
     vm: RideDetailViewModel = hiltViewModel(),
 ) {
-    LaunchedEffect(rideId) { vm.load(rideId) }
+    LaunchedEffect(rideId, rateTargetUserId) { vm.load(rideId, rateTargetUserId) }
     val state by vm.state.collectAsState()
     val context = LocalContext.current
 
@@ -161,6 +162,9 @@ fun RideDetailScreen(
         if (state.canPromptForRating) {
             Spacer(Modifier.height(12.dp))
             RatingSheet(
+                title = if (state.isMyRide)
+                    "How was ${state.rateTargetName ?: "your rider"}?"
+                else "How was your ride?",
                 stars = state.ratingDraftStars,
                 text = state.ratingDraftText,
                 submitting = state.ratingSubmitting,
@@ -190,6 +194,7 @@ fun RideDetailScreen(
 
 @Composable
 private fun RatingSheet(
+    title: String,
     stars: Int,
     text: String,
     submitting: Boolean,
@@ -204,7 +209,7 @@ private fun RatingSheet(
     ) {
         Column(Modifier.padding(12.dp)) {
             Text(
-                "How was your ride?",
+                title,
                 style = MaterialTheme.typography.titleSmall,
             )
             Spacer(Modifier.height(8.dp))

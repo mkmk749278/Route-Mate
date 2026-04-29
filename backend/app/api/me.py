@@ -11,8 +11,10 @@ from app.api.schemas import (
     DriverLocation,
     MeOut,
     MePatch,
+    RatingPrompt,
     RideBooking,
     TripsOut,
+    UserOut,
 )
 from app.core.config import settings
 from app.core.security import current_user_id
@@ -127,7 +129,44 @@ async def my_trips(
             )
         )
 
-    return TripsOut(driving=driving, riding=riding, awaiting_rating=awaiting_rating)
+    # Drivers rate accepted riders. One row per (ride, rider) pair where the
+    # ride is completed and I haven't rated that rider yet.
+    driver_prompt_rows = (
+        await session.execute(
+            select(Booking, Ride, User)
+            .join(Ride, Ride.id == Booking.ride_id)
+            .join(User, User.id == Booking.rider_id)
+            .where(
+                Ride.driver_id == user_id,
+                Ride.status == RideStatus.completed,
+                Booking.status == BookingStatus.accepted,
+                ~select(Rating.id)
+                .where(
+                    Rating.ride_id == Ride.id,
+                    Rating.from_id == user_id,
+                    Rating.to_id == Booking.rider_id,
+                )
+                .exists(),
+            )
+            .order_by(Ride.depart_at.desc())
+            .limit(50)
+        )
+    ).all()
+    awaiting_driver_rating: list[RatingPrompt] = []
+    for _booking, ride, rider in driver_prompt_rows:
+        awaiting_driver_rating.append(
+            RatingPrompt(
+                ride=ride_to_out(ride, await seats_taken(session, ride.id)),
+                target=UserOut.model_validate(rider),
+            )
+        )
+
+    return TripsOut(
+        driving=driving,
+        riding=riding,
+        awaiting_rating=awaiting_rating,
+        awaiting_driver_rating=awaiting_driver_rating,
+    )
 
 
 @router.get(

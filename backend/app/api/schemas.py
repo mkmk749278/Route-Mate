@@ -106,11 +106,23 @@ class RatingOut(BaseModel):
     text: str | None = None
 
 
+class RatingPrompt(BaseModel):
+    """Tells the client: 'rate this user on this ride'.
+
+    Used for driver-rates-rider direction where one ride may have multiple
+    targets; rider-rates-driver continues to use awaiting_rating: list[RideBooking]
+    since the target is implicit (ride.driver).
+    """
+    ride: RideOut
+    target: UserOut
+
+
 class TripsOut(BaseModel):
     """Aggregated trips for the current user, both as driver and rider."""
     driving: list[RideOut]
     riding: list[RideBooking]
     awaiting_rating: list[RideBooking]
+    awaiting_driver_rating: list[RatingPrompt] = []
 
 
 class DriverLocation(BaseModel):
