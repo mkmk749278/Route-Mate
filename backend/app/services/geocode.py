@@ -30,10 +30,16 @@ class GeocodeHit(BaseModel):
 
 _RATE_LIMIT_KEY = "geocode:rate"
 _CACHE_PREFIX = "geocode:q:"
+_REVERSE_CACHE_PREFIX = "geocode:r:"
 
 
 def _cache_key(q: str) -> str:
     return f"{_CACHE_PREFIX}{q.strip().lower()}"
+
+
+def _reverse_cache_key(lat: float, lng: float) -> str:
+    # Round to ~10m resolution so close requests collapse.
+    return f"{_REVERSE_CACHE_PREFIX}{round(lat, 4)}:{round(lng, 4)}"
 
 
 async def _acquire_rate_slot(r: redis.Redis) -> None:
@@ -94,5 +100,56 @@ async def geocode(q: str, limit: int = 5) -> list[GeocodeHit]:
             ex=settings.geocode_cache_ttl_seconds,
         )
         return hits[:limit]
+    finally:
+        await r.aclose()
+
+
+async def reverse(lat: float, lng: float) -> GeocodeHit | None:
+    """Lookup a human label for a coordinate. Returns None on miss/error."""
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        return None
+
+    r: redis.Redis = redis.from_url(settings.redis_url, decode_responses=True)
+    try:
+        cached = await r.get(_reverse_cache_key(lat, lng))
+        if cached is not None:
+            data = json.loads(cached)
+            return GeocodeHit(**data) if data else None
+
+        await _acquire_rate_slot(r)
+
+        params: dict[str, Any] = {
+            "lat": lat,
+            "lon": lng,
+            "format": "jsonv2",
+            "addressdetails": 0,
+            "zoom": 18,
+        }
+        headers = {"User-Agent": settings.nominatim_user_agent, "Accept-Language": "en"}
+        url = f"{settings.nominatim_base_url.rstrip('/')}/reverse"
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(url, params=params, headers=headers)
+                resp.raise_for_status()
+                payload = resp.json()
+        except httpx.HTTPError as exc:
+            log.warning("nominatim reverse error: %s", exc)
+            return None
+
+        label = payload.get("display_name")
+        plat = payload.get("lat")
+        plng = payload.get("lon")
+        hit = (
+            GeocodeHit(label=label, lat=float(plat), lng=float(plng))
+            if label and plat and plng
+            else None
+        )
+        await r.set(
+            _reverse_cache_key(lat, lng),
+            json.dumps(hit.model_dump() if hit else {}),
+            ex=settings.geocode_cache_ttl_seconds,
+        )
+        return hit
     finally:
         await r.aclose()

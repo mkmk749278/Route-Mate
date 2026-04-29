@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.routemate.data.GeocodeHit
 import app.routemate.data.LatLng
+import app.routemate.data.LocationProvider
 import app.routemate.data.PlaceRepository
 import app.routemate.data.RideCreate
 import app.routemate.data.RideRepository
@@ -49,6 +50,7 @@ data class OfferState(
 class OfferViewModel @Inject constructor(
     private val rides: RideRepository,
     private val places: PlaceRepository,
+    private val location: LocationProvider,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(OfferState())
@@ -56,6 +58,16 @@ class OfferViewModel @Inject constructor(
 
     private var originJob: Job? = null
     private var destJob: Job? = null
+
+    fun useCurrentLocation(field: OfferField) {
+        viewModelScope.launch {
+            val ll = location.current() ?: return@launch
+            val hit = places.reverse(ll.lat, ll.lng) ?: GeocodeHit(
+                label = "%.5f, %.5f".format(ll.lat, ll.lng), lat = ll.lat, lng = ll.lng,
+            )
+            onPickHit(field, hit)
+        }
+    }
 
     fun onTextChange(field: OfferField, value: String) {
         when (field) {
