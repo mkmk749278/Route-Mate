@@ -9,9 +9,18 @@ services:
       DATABASE_URL: postgresql+asyncpg://routemate:${POSTGRES_PASSWORD}@db:5432/routemate
       REDIS_URL: redis://redis:6379/0
       DEV_LOGIN_ENABLED: ${DEV_LOGIN_ENABLED:-false}
+      # Bind-mounted below; init_firebase() loads if the file exists.
+      FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase-admin.json
     depends_on:
       db: { condition: service_healthy }
       redis: { condition: service_started }
+    volumes:
+      # Optional: mount the Firebase Admin SDK JSON if present on the host.
+      # The container path is referenced by FIREBASE_CREDENTIALS_PATH below.
+      # If the host file is missing, the bind mount becomes an empty file and
+      # init_firebase() noops with a warning — auth/exchange returns 401, but
+      # /v1/auth/dev-login still works while DEV_LOGIN_ENABLED=true.
+      - ./firebase-admin.json:/run/secrets/firebase-admin.json:ro
     networks: [internal]
 
   db:
