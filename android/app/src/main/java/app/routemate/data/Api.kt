@@ -174,6 +174,12 @@ interface RouteMatesApi {
         @Query("limit") limit: Int = 5,
     ): List<GeocodeHit>
 
+    @GET("v1/geocode/reverse")
+    suspend fun reverseGeocode(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double,
+    ): GeocodeHit
+
     @GET("v1/me/trips")
     suspend fun myTrips(): TripsOut
 
