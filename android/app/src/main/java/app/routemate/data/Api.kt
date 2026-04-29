@@ -94,10 +94,12 @@ import retrofit2.http.Query
 )
 
 @Serializable data class RideBooking(val booking: BookingOut, val ride: RideOut)
+@Serializable data class RatingPrompt(val ride: RideOut, val target: UserOut)
 @Serializable data class TripsOut(
     val driving: List<RideOut>,
     val riding: List<RideBooking>,
     val awaiting_rating: List<RideBooking> = emptyList(),
+    val awaiting_driver_rating: List<RatingPrompt> = emptyList(),
 )
 @Serializable data class RatingOut(
     val id: String,
@@ -151,7 +153,10 @@ interface RouteMatesApi {
     suspend fun rate(@Path("id") id: String, @Body body: RatingCreate): Map<String, Boolean>
 
     @GET("v1/rides/{id}/ratings/me")
-    suspend fun myRating(@Path("id") id: String): RatingOut?
+    suspend fun myRating(
+        @Path("id") id: String,
+        @Query("target") target: String? = null,
+    ): RatingOut?
 
     @GET("v1/bookings/me")
     suspend fun myBookings(): List<BookingOut>

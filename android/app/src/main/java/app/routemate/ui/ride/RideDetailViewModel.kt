@@ -39,6 +39,10 @@ data class RideDetailState(
     val chat: List<ChatLine> = emptyList(),
     val draft: String = "",
     val myRating: RatingOut? = null,
+    /** Who I'm rating on this ride. Null until ride is loaded; set to driver
+     *  for riders, or to a specific rider when navigated as driver. */
+    val rateTargetId: String? = null,
+    val rateTargetName: String? = null,
     val ratingDraftStars: Int = 0,
     val ratingDraftText: String = "",
     val ratingSubmitting: Boolean = false,
@@ -46,7 +50,11 @@ data class RideDetailState(
     val error: String? = null,
 ) {
     val canPromptForRating: Boolean
-        get() = ride != null && ride.status == "completed" && !isMyRide && myRating == null
+        get() = ride != null
+            && ride.status == "completed"
+            && rateTargetId != null
+            && rateTargetId != meId
+            && myRating == null
 }
 
 @HiltViewModel
@@ -64,20 +72,28 @@ class RideDetailViewModel @Inject constructor(
     private var conn: RideConnection? = null
     private var rideId: String? = null
 
-    fun load(id: String) {
+    fun load(id: String, rateTargetId: String? = null) {
         rideId = id
         viewModelScope.launch {
             val meId = runCatching { api.me().id }.getOrNull()
             _state.value = _state.value.copy(meId = meId)
             runCatching { rides.getRide(id) }
                 .onSuccess { ride ->
+                    val isMine = meId != null && ride.driver.id == meId
+                    val resolvedTargetId = rateTargetId ?: if (!isMine) ride.driver.id else null
+                    val resolvedTargetName = when (resolvedTargetId) {
+                        ride.driver.id -> ride.driver.name
+                        else -> null
+                    }
                     _state.value = _state.value.copy(
                         ride = ride,
-                        isMyRide = meId != null && ride.driver.id == meId,
+                        isMyRide = isMine,
+                        rateTargetId = resolvedTargetId,
+                        rateTargetName = resolvedTargetName,
                     )
                     seedLastLocation(id)
                     seedChat(id)
-                    seedMyRating(id)
+                    seedMyRating(id, resolvedTargetId)
                     connectSocket(id)
                 }
                 .onFailure { _state.value = _state.value.copy(error = it.message) }
@@ -100,8 +116,8 @@ class RideDetailViewModel @Inject constructor(
         )
     }
 
-    private suspend fun seedMyRating(id: String) {
-        val r = runCatching { api.myRating(id) }.getOrNull()
+    private suspend fun seedMyRating(id: String, target: String?) {
+        val r = runCatching { api.myRating(id, target) }.getOrNull()
         _state.value = _state.value.copy(myRating = r)
     }
 
@@ -116,6 +132,7 @@ class RideDetailViewModel @Inject constructor(
     fun submitRating() {
         val s = _state.value
         val ride = s.ride ?: return
+        val target = s.rateTargetId ?: return
         if (s.ratingDraftStars !in 1..5) return
         if (s.ratingSubmitting) return
         _state.value = s.copy(ratingSubmitting = true, error = null)
@@ -125,12 +142,12 @@ class RideDetailViewModel @Inject constructor(
                 api.rate(
                     ride.id,
                     RatingCreate(
-                        to_user_id = ride.driver.id,
+                        to_user_id = target,
                         stars = s.ratingDraftStars,
                         text = s.ratingDraftText.trim().ifBlank { null },
                     ),
                 )
-                api.myRating(ride.id)
+                api.myRating(ride.id, target)
             }
                 .onSuccess {
                     _state.value = _state.value.copy(

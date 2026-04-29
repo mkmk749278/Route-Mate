@@ -182,18 +182,18 @@ async def list_messages(
 @router.get(
     "/{ride_id}/ratings/me",
     response_model=RatingOut | None,
-    summary="My rating on this ride, or null if I haven't rated yet",
+    summary="My rating on this ride (optionally to a specific target), or null",
 )
 async def my_rating(
     ride_id: UUID,
+    target: UUID | None = Query(default=None),
     user_id: UUID = Depends(current_user_id),
     session: AsyncSession = Depends(get_session),
 ) -> RatingOut | None:
-    row = (
-        await session.execute(
-            select(Rating).where(Rating.ride_id == ride_id, Rating.from_id == user_id)
-        )
-    ).scalar_one_or_none()
+    stmt = select(Rating).where(Rating.ride_id == ride_id, Rating.from_id == user_id)
+    if target is not None:
+        stmt = stmt.where(Rating.to_id == target)
+    row = (await session.execute(stmt)).scalar_one_or_none()
     return RatingOut.model_validate(row) if row is not None else None
 
 
