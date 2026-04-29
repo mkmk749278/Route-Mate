@@ -149,6 +149,12 @@ interface RouteMatesApi {
     @POST("v1/rides/{id}/complete")
     suspend fun completeRide(@Path("id") id: String): RideOut
 
+    @POST("v1/rides/{id}/cancel")
+    suspend fun cancelRide(@Path("id") id: String): RideOut
+
+    @GET("v1/rides/{id}/booking/me")
+    suspend fun myBooking(@Path("id") id: String): BookingOut?
+
     @POST("v1/rides/{id}/ratings")
     suspend fun rate(@Path("id") id: String, @Body body: RatingCreate): Map<String, Boolean>
 

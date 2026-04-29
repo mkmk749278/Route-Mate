@@ -114,6 +114,11 @@ fun RideDetailScreen(
 
             if (state.isMyRide) {
                 if (ride.status == "scheduled") {
+                    OutlinedButton(
+                        onClick = vm::cancelAsDriver,
+                        enabled = !state.busy,
+                    ) { Text("Cancel") }
+                    Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = {
                             val granted = ContextCompat.checkSelfPermission(
@@ -131,6 +136,11 @@ fun RideDetailScreen(
                 } else if (ride.status == "started") {
                     Button(onClick = vm::complete, enabled = !state.busy) { Text("Complete") }
                 }
+            } else if (state.canCancelAsRider) {
+                OutlinedButton(
+                    onClick = vm::cancelAsRider,
+                    enabled = !state.busy,
+                ) { Text("Cancel booking") }
             }
         }
 
