@@ -197,6 +197,55 @@ async def my_rating(
     return RatingOut.model_validate(row) if row is not None else None
 
 
+@router.get(
+    "/{ride_id}/booking/me",
+    response_model=BookingOut | None,
+    summary="My booking on this ride, or null if I don't have one",
+)
+async def my_booking(
+    ride_id: UUID,
+    user_id: UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> BookingOut | None:
+    row = (
+        await session.execute(
+            select(Booking).where(Booking.ride_id == ride_id, Booking.rider_id == user_id)
+        )
+    ).scalar_one_or_none()
+    return BookingOut.model_validate(row) if row is not None else None
+
+
+@router.post("/{ride_id}/cancel", response_model=RideOut)
+async def cancel_ride(
+    ride_id: UUID,
+    user_id: UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> RideOut:
+    """Driver-only cancel. Refuses if the ride has already started or
+    completed; on success cascades to mark all live bookings cancelled."""
+    ride = await session.get(Ride, ride_id)
+    if ride is None or ride.driver_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if ride.status not in {RideStatus.scheduled}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="ride not cancellable"
+        )
+    ride.status = RideStatus.cancelled
+    bookings = (
+        await session.execute(
+            select(Booking).where(
+                Booking.ride_id == ride_id,
+                Booking.status.notin_({BookingStatus.cancelled, BookingStatus.rejected}),
+            )
+        )
+    ).scalars().all()
+    for b in bookings:
+        b.status = BookingStatus.cancelled
+    await session.commit()
+    await session.refresh(ride)
+    return ride_to_out(ride, await seats_taken(session, ride.id))
+
+
 @router.post("/{ride_id}/complete", response_model=RideOut)
 async def complete_ride(
     ride_id: UUID,

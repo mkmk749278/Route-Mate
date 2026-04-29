@@ -33,4 +33,9 @@ class RideRepository @Inject constructor(
 
     suspend fun start(rideId: String): RideOut = api.startRide(rideId)
     suspend fun complete(rideId: String): RideOut = api.completeRide(rideId)
+    suspend fun cancelRide(rideId: String): RideOut = api.cancelRide(rideId)
+    suspend fun cancelBooking(bookingId: String): BookingOut = api.cancel(bookingId)
+    suspend fun myBookingOnRide(rideId: String): BookingOut? = runCatching {
+        api.myBooking(rideId)
+    }.getOrNull()
 }

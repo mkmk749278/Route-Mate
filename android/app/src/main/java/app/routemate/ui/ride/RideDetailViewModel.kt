@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.routemate.data.AuthStore
+import app.routemate.data.BookingOut
 import app.routemate.data.LatLng
 import app.routemate.data.MessageOut
 import app.routemate.data.RatingCreate
@@ -32,6 +33,7 @@ data class ChatLine(
 
 data class RideDetailState(
     val ride: RideOut? = null,
+    val myBooking: BookingOut? = null,
     val driverPin: LatLng? = null,
     val driverPinTs: Long? = null,
     val isMyRide: Boolean = false,
@@ -49,6 +51,14 @@ data class RideDetailState(
     val busy: Boolean = false,
     val error: String? = null,
 ) {
+    val canCancelAsDriver: Boolean
+        get() = isMyRide && ride?.status == "scheduled"
+
+    val canCancelAsRider: Boolean
+        get() = !isMyRide
+            && ride?.status == "scheduled"
+            && myBooking != null
+            && myBooking.status != "cancelled"
     val canPromptForRating: Boolean
         get() = ride != null
             && ride.status == "completed"
@@ -94,6 +104,7 @@ class RideDetailViewModel @Inject constructor(
                     seedLastLocation(id)
                     seedChat(id)
                     seedMyRating(id, resolvedTargetId)
+                    seedMyBooking(id)
                     connectSocket(id)
                 }
                 .onFailure { _state.value = _state.value.copy(error = it.message) }
@@ -119,6 +130,41 @@ class RideDetailViewModel @Inject constructor(
     private suspend fun seedMyRating(id: String, target: String?) {
         val r = runCatching { api.myRating(id, target) }.getOrNull()
         _state.value = _state.value.copy(myRating = r)
+    }
+
+    private suspend fun seedMyBooking(id: String) {
+        val b = rides.myBookingOnRide(id)
+        _state.value = _state.value.copy(myBooking = b)
+    }
+
+    fun cancelAsDriver() {
+        val id = rideId ?: return
+        if (!_state.value.canCancelAsDriver) return
+        _state.value = _state.value.copy(busy = true, error = null)
+        viewModelScope.launch {
+            runCatching { rides.cancelRide(id) }
+                .onSuccess { ride ->
+                    _state.value = _state.value.copy(ride = ride, busy = false)
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(busy = false, error = it.message)
+                }
+        }
+    }
+
+    fun cancelAsRider() {
+        val booking = _state.value.myBooking ?: return
+        if (!_state.value.canCancelAsRider) return
+        _state.value = _state.value.copy(busy = true, error = null)
+        viewModelScope.launch {
+            runCatching { rides.cancelBooking(booking.id) }
+                .onSuccess { b ->
+                    _state.value = _state.value.copy(myBooking = b, busy = false)
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(busy = false, error = it.message)
+                }
+        }
     }
 
     fun onRatingStarsChange(stars: Int) {
