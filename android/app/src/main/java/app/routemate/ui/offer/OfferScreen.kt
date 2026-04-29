@@ -23,6 +23,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -152,6 +154,31 @@ fun OfferScreen(vm: OfferViewModel = hiltViewModel()) {
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
+
+        Spacer(Modifier.height(16.dp))
+        Text("Repeat on", style = MaterialTheme.typography.bodyMedium)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(top = 4.dp),
+        ) {
+            val labels = listOf("M", "T", "W", "T", "F", "S", "S")
+            labels.forEachIndexed { idx, label ->
+                FilterChip(
+                    selected = (state.recurrenceDays shr idx) and 1 == 1,
+                    onClick = { vm.toggleRecurrenceDay(idx) },
+                    label = { Text(label) },
+                    colors = FilterChipDefaults.filterChipColors(),
+                )
+            }
+        }
+        if (state.recurrenceDays != 0) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "After this ride completes, the next matching weekday's ride is auto-posted.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         Spacer(Modifier.height(20.dp))
         Button(

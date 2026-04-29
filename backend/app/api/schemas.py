@@ -48,6 +48,7 @@ class RideCreate(BaseModel):
     depart_at: datetime
     seats_total: int = Field(..., ge=1, le=8)
     price_per_seat: Decimal = Field(..., ge=0)
+    recurrence_days: int = Field(default=0, ge=0, le=127)
 
 
 class RideOut(BaseModel):
@@ -64,6 +65,7 @@ class RideOut(BaseModel):
     price_per_seat: Decimal
     status: str
     polyline: str | None = None
+    recurrence_days: int = 0
 
 
 class BookingCreate(BaseModel):

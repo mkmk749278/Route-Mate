@@ -100,7 +100,10 @@ private fun DrivingCard(ride: RideOut, onClick: () -> Unit) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "${ride.origin_label}  →  ${ride.destination_label}",
+                    buildString {
+                        if (ride.recurrence_days != 0) append("🔁 ")
+                        append("${ride.origin_label}  →  ${ride.destination_label}")
+                    },
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -33,11 +33,67 @@ async def create_ride(
         depart_at=body.depart_at,
         seats_total=body.seats_total,
         price_per_seat=body.price_per_seat,
+        recurrence_days=body.recurrence_days,
     )
     session.add(ride)
     await session.commit()
     await session.refresh(ride)
     return ride_to_out(ride, 0)
+
+
+def _next_recurring_depart(depart_at: datetime, recurrence_days: int) -> datetime | None:
+    """Given a depart timestamp and a 7-bit Mon-Sun mask, return the next
+    same-time depart for any matching weekday in the next 1-7 days, or None
+    if the mask is empty.
+    """
+    if recurrence_days == 0:
+        return None
+    for delta in range(1, 8):
+        candidate = depart_at + timedelta(days=delta)
+        if (recurrence_days >> candidate.weekday()) & 1:
+            return candidate
+    return None
+
+
+async def _materialize_next_recurring(session: AsyncSession, ride: Ride) -> None:
+    """If `ride` has a recurrence pattern, create the next instance.
+
+    Idempotent: skips if a scheduled clone already exists for the same driver
+    at the next depart timestamp (avoids duplicates if complete is called
+    twice somehow).
+    """
+    next_depart = _next_recurring_depart(ride.depart_at, ride.recurrence_days)
+    if next_depart is None:
+        return
+
+    existing = (
+        await session.execute(
+            select(Ride.id).where(
+                Ride.driver_id == ride.driver_id,
+                Ride.depart_at == next_depart,
+                Ride.status == RideStatus.scheduled,
+                Ride.origin_label == ride.origin_label,
+                Ride.destination_label == ride.destination_label,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is not None:
+        return
+
+    clone = Ride(
+        driver_id=ride.driver_id,
+        origin=ride.origin,
+        destination=ride.destination,
+        origin_label=ride.origin_label,
+        destination_label=ride.destination_label,
+        polyline=ride.polyline,
+        depart_at=next_depart,
+        seats_total=ride.seats_total,
+        price_per_seat=ride.price_per_seat,
+        recurrence_days=ride.recurrence_days,
+    )
+    session.add(clone)
+    await session.flush()
 
 
 @router.get("/search", response_model=list[RideOut])
@@ -258,6 +314,7 @@ async def complete_ride(
     if ride.status != RideStatus.started:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="bad status")
     ride.status = RideStatus.completed
+    await _materialize_next_recurring(session, ride)
     await session.commit()
     await session.refresh(ride)
     return ride_to_out(ride, await seats_taken(session, ride.id))

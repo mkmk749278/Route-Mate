@@ -67,6 +67,7 @@ class Ride(Base):
     depart_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     seats_total: Mapped[int] = mapped_column(Integer)
     price_per_seat: Mapped[float] = mapped_column(Numeric(8, 2))
+    recurrence_days: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     status: Mapped[RideStatus] = mapped_column(
         Enum(RideStatus, name="ride_status"), default=RideStatus.scheduled
     )
