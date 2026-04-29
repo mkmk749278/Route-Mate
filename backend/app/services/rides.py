@@ -31,6 +31,7 @@ def ride_to_out(ride: Ride, seats_taken: int) -> RideOut:
         price_per_seat=ride.price_per_seat,
         status=ride.status.value,
         polyline=ride.polyline,
+        recurrence_days=ride.recurrence_days,
     )
 
 

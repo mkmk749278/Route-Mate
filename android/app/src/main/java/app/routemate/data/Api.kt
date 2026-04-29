@@ -48,6 +48,7 @@ import retrofit2.http.Query
     val depart_at: String,
     val seats_total: Int,
     val price_per_seat: String,
+    val recurrence_days: Int = 0,
 )
 
 @Serializable data class RideOut(
@@ -63,6 +64,7 @@ import retrofit2.http.Query
     val price_per_seat: String,
     val status: String,
     val polyline: String? = null,
+    val recurrence_days: Int = 0,
 )
 
 @Serializable data class BookingCreate(val seats: Int = 1)

@@ -35,6 +35,8 @@ data class OfferState(
     val departInMinutes: Int = 30,
     val seats: Int = 3,
     val pricePerSeat: String = "50",
+    /** 7-bit Mon-Sun bitmask. 0 = one-shot ride. */
+    val recurrenceDays: Int = 0,
     val busy: Boolean = false,
     val error: String? = null,
     val postedRideId: String? = null,
@@ -111,6 +113,12 @@ class OfferViewModel @Inject constructor(
         _state.value = _state.value.copy(pricePerSeat = v.filter(Char::isDigit).take(4))
     }
 
+    fun toggleRecurrenceDay(weekdayIndex: Int) {
+        require(weekdayIndex in 0..6)
+        val mask = _state.value.recurrenceDays xor (1 shl weekdayIndex)
+        _state.value = _state.value.copy(recurrenceDays = mask)
+    }
+
     private suspend fun suggest(field: OfferField, q: String) {
         delay(DEBOUNCE_MS)
         val hits = places.search(q)
@@ -142,6 +150,7 @@ class OfferViewModel @Inject constructor(
                         depart_at = departAt,
                         seats_total = s.seats,
                         price_per_seat = s.pricePerSeat,
+                        recurrence_days = s.recurrenceDays,
                     )
                 )
             }.onSuccess { ride ->
