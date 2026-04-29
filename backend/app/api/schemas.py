@@ -89,6 +89,23 @@ class FcmRegister(BaseModel):
     platform: str = "android"
 
 
+class RideBooking(BaseModel):
+    booking: BookingOut
+    ride: RideOut
+
+
+class TripsOut(BaseModel):
+    """Aggregated trips for the current user, both as driver and rider."""
+    driving: list[RideOut]
+    riding: list[RideBooking]
+
+
+class DriverLocation(BaseModel):
+    lat: float
+    lng: float
+    ts: int
+
+
 class MessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID

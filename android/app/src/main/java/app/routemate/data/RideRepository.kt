@@ -23,6 +23,14 @@ class RideRepository @Inject constructor(
 
     suspend fun myBookings(): List<BookingOut> = api.myBookings()
 
+    suspend fun myTrips(): TripsOut = api.myTrips()
+
+    suspend fun getRide(id: String): RideOut = api.getRide(id)
+
+    suspend fun lastDriverLocation(rideId: String): DriverLocation? = runCatching {
+        api.rideLocation(rideId)
+    }.getOrNull()
+
     suspend fun start(rideId: String): RideOut = api.startRide(rideId)
     suspend fun complete(rideId: String): RideOut = api.completeRide(rideId)
 }
