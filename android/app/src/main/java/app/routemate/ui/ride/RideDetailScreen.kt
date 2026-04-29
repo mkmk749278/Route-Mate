@@ -4,18 +4,31 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,7 +37,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -51,7 +66,7 @@ fun RideDetailScreen(
         if (granted.values.any { it }) vm.start()
     }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
+    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp).padding(top = 12.dp)) {
         if (state.error != null) {
             Text("Error: ${state.error}", color = MaterialTheme.colorScheme.error)
             Spacer(Modifier.height(8.dp))
@@ -67,24 +82,27 @@ fun RideDetailScreen(
             "${ride.origin_label}  →  ${ride.destination_label}",
             style = MaterialTheme.typography.titleMedium,
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(2.dp))
         Text(
             "Status: ${ride.status} · ${ride.seats_available}/${ride.seats_total} seats · ₹${ride.price_per_seat}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        Spacer(Modifier.height(12.dp))
-        Box(Modifier.fillMaxWidth().height(360.dp)) {
+        Spacer(Modifier.height(10.dp))
+        Box(Modifier.fillMaxWidth().height(220.dp)) {
             RideMap(
                 origin = ride.origin,
                 destination = ride.destination,
                 driver = state.driverPin,
             )
         }
-        Spacer(Modifier.height(12.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Spacer(Modifier.height(10.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             OutlinedButton(onClick = onBack) { Text("Back") }
             Spacer(Modifier.weight(1f))
 
@@ -109,6 +127,15 @@ fun RideDetailScreen(
                 }
             }
         }
+
+        Spacer(Modifier.height(12.dp))
+        ChatPanel(
+            chat = state.chat,
+            draft = state.draft,
+            onDraft = vm::onDraftChange,
+            onSend = vm::sendDraft,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+        )
     }
 }
 
@@ -157,4 +184,86 @@ private fun RideMap(origin: LatLng, destination: LatLng, driver: LatLng?) {
             map.invalidate()
         },
     )
+}
+
+@Composable
+private fun ChatPanel(
+    chat: List<ChatLine>,
+    draft: String,
+    onDraft: (String) -> Unit,
+    onSend: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(chat.size) {
+        if (chat.isNotEmpty()) listState.animateScrollToItem(chat.lastIndex)
+    }
+
+    Column(modifier) {
+        Surface(
+            tonalElevation = 1.dp,
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+        ) {
+            if (chat.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        "Coordinate pickup with chat once the ride is booked.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(24.dp),
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.fillMaxHeight(),
+                ) {
+                    items(chat, key = { it.id.ifBlank { it.at + it.from + it.body } }) { line ->
+                        ChatBubble(line)
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = draft,
+                onValueChange = onDraft,
+                placeholder = { Text("Message…") },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(
+                onClick = onSend,
+                enabled = draft.trim().isNotEmpty(),
+            ) {
+                Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = "Send")
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun ChatBubble(line: ChatLine) {
+    val bubble = if (line.mine) MaterialTheme.colorScheme.primaryContainer
+                 else MaterialTheme.colorScheme.surfaceVariant
+    val align = if (line.mine) Alignment.End else Alignment.Start
+
+    Column(Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .align(align)
+                .clip(RoundedCornerShape(12.dp))
+                .background(bubble)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Text(line.body, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
 }
