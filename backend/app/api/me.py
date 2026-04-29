@@ -16,7 +16,7 @@ from app.api.schemas import (
 )
 from app.core.config import settings
 from app.core.security import current_user_id
-from app.db.models import Booking, BookingStatus, Ride, RideStatus, User
+from app.db.models import Booking, BookingStatus, Rating, Ride, RideStatus, User
 from app.db.session import get_session
 from app.services.rides import ride_to_out, seats_taken
 
@@ -98,7 +98,34 @@ async def my_trips(
             )
         )
 
-    return TripsOut(driving=driving, riding=riding)
+    # Rides this user has ridden on (booking ever accepted) that are
+    # completed AND not yet rated by the user.
+    awaiting_rows = (
+        await session.execute(
+            select(Booking, Ride)
+            .join(Ride, Ride.id == Booking.ride_id)
+            .where(
+                Booking.rider_id == user_id,
+                Booking.status == BookingStatus.accepted,
+                Ride.status == RideStatus.completed,
+                ~select(Rating.id)
+                .where(Rating.ride_id == Ride.id, Rating.from_id == user_id)
+                .exists(),
+            )
+            .order_by(Ride.depart_at.desc())
+            .limit(20)
+        )
+    ).all()
+    awaiting_rating: list[RideBooking] = []
+    for booking, ride in awaiting_rows:
+        awaiting_rating.append(
+            RideBooking(
+                booking=BookingOut.model_validate(booking),
+                ride=ride_to_out(ride, await seats_taken(session, ride.id)),
+            )
+        )
+
+    return TripsOut(driving=driving, riding=riding, awaiting_rating=awaiting_rating)
 
 
 @router.get(

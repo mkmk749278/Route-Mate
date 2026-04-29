@@ -94,10 +94,21 @@ class RideBooking(BaseModel):
     ride: RideOut
 
 
+class RatingOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    ride_id: UUID
+    from_id: UUID
+    to_id: UUID
+    stars: int
+    text: str | None = None
+
+
 class TripsOut(BaseModel):
     """Aggregated trips for the current user, both as driver and rider."""
     driving: list[RideOut]
     riding: list[RideBooking]
+    awaiting_rating: list[RideBooking]
 
 
 class DriverLocation(BaseModel):

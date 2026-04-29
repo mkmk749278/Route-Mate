@@ -91,7 +91,19 @@ import retrofit2.http.Query
 )
 
 @Serializable data class RideBooking(val booking: BookingOut, val ride: RideOut)
-@Serializable data class TripsOut(val driving: List<RideOut>, val riding: List<RideBooking>)
+@Serializable data class TripsOut(
+    val driving: List<RideOut>,
+    val riding: List<RideBooking>,
+    val awaiting_rating: List<RideBooking> = emptyList(),
+)
+@Serializable data class RatingOut(
+    val id: String,
+    val ride_id: String,
+    val from_id: String,
+    val to_id: String,
+    val stars: Int,
+    val text: String? = null,
+)
 @Serializable data class DriverLocation(val lat: Double, val lng: Double, val ts: Long)
 
 interface RouteMatesApi {
@@ -134,6 +146,9 @@ interface RouteMatesApi {
 
     @POST("v1/rides/{id}/ratings")
     suspend fun rate(@Path("id") id: String, @Body body: RatingCreate): Map<String, Boolean>
+
+    @GET("v1/rides/{id}/ratings/me")
+    suspend fun myRating(@Path("id") id: String): RatingOut?
 
     @GET("v1/bookings/me")
     suspend fun myBookings(): List<BookingOut>
