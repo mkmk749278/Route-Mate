@@ -34,6 +34,21 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Decode google-services.json (optional)
+        env:
+          FIREBASE_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -z "$FIREBASE_GOOGLE_SERVICES_JSON" ]; then
+            echo "::warning::FIREBASE_GOOGLE_SERVICES_JSON not set — building without Firebase. Phone OTP will fall back to dev-login."
+            exit 0
+          fi
+          printf '%s' "$FIREBASE_GOOGLE_SERVICES_JSON" | tr -cd 'A-Za-z0-9+/=' | base64 -d > app/google-services.json
+          gs_bytes=$(stat -c %s app/google-services.json)
+          if [ "$gs_bytes" -lt 200 ]; then
+            echo "::error::google-services.json is only ${gs_bytes} bytes — secret is truncated or corrupt"
+            exit 1
+          fi
+
       - name: Decode signing keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

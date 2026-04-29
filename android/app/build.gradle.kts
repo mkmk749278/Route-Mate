@@ -112,4 +112,7 @@ dependencies {
 
     implementation(libs.osmdroid)
     implementation(libs.coil.compose)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
 }
