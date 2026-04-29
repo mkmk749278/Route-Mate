@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.routemate.data.AuthStore
 import app.routemate.data.LatLng
+import app.routemate.data.MessageOut
 import app.routemate.data.RideConnection
 import app.routemate.data.RideOut
 import app.routemate.data.RideRepository
@@ -19,11 +20,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+data class ChatLine(
+    val id: String,
+    val from: String,
+    val body: String,
+    val at: String,
+    val mine: Boolean,
+)
+
 data class RideDetailState(
     val ride: RideOut? = null,
     val driverPin: LatLng? = null,
     val driverPinTs: Long? = null,
     val isMyRide: Boolean = false,
+    val meId: String? = null,
+    val chat: List<ChatLine> = emptyList(),
+    val draft: String = "",
     val busy: Boolean = false,
     val error: String? = null,
 )
@@ -47,6 +59,7 @@ class RideDetailViewModel @Inject constructor(
         rideId = id
         viewModelScope.launch {
             val meId = runCatching { api.me().id }.getOrNull()
+            _state.value = _state.value.copy(meId = meId)
             runCatching { rides.getRide(id) }
                 .onSuccess { ride ->
                     _state.value = _state.value.copy(
@@ -54,7 +67,8 @@ class RideDetailViewModel @Inject constructor(
                         isMyRide = meId != null && ride.driver.id == meId,
                     )
                     seedLastLocation(id)
-                    if (ride.status == "started") connectSocket(id)
+                    seedChat(id)
+                    connectSocket(id)
                 }
                 .onFailure { _state.value = _state.value.copy(error = it.message) }
         }
@@ -68,22 +82,57 @@ class RideDetailViewModel @Inject constructor(
         )
     }
 
+    private suspend fun seedChat(id: String) {
+        val msgs = runCatching { api.rideMessages(id) }.getOrDefault(emptyList())
+        val meId = _state.value.meId
+        _state.value = _state.value.copy(
+            chat = msgs.map { it.toLine(meId) },
+        )
+    }
+
     private fun connectSocket(id: String) {
+        if (conn != null) return
         viewModelScope.launch {
             runCatching { socket.connect(id) }
                 .onSuccess { c ->
                     conn = c
                     c.events.collect { env ->
-                        if (env.type == "location" && env.lat != null && env.lng != null) {
-                            _state.value = _state.value.copy(
-                                driverPin = LatLng(env.lat, env.lng),
-                                driverPinTs = env.ts,
-                            )
+                        when (env.type) {
+                            "location" -> if (env.lat != null && env.lng != null) {
+                                _state.value = _state.value.copy(
+                                    driverPin = LatLng(env.lat, env.lng),
+                                    driverPinTs = env.ts,
+                                )
+                            }
+                            "chat" -> {
+                                val meId = _state.value.meId
+                                val line = ChatLine(
+                                    id = env.id ?: "",
+                                    from = env.from ?: "",
+                                    body = env.body.orEmpty(),
+                                    at = env.at.orEmpty(),
+                                    mine = env.from != null && env.from == meId,
+                                )
+                                if (_state.value.chat.none { it.id == line.id && line.id.isNotBlank() }) {
+                                    _state.value = _state.value.copy(chat = _state.value.chat + line)
+                                }
+                            }
                         }
                     }
                 }
-                .onFailure { /* keep last-known pin from REST seed */ }
+                .onFailure { /* keep last-known state */ }
         }
+    }
+
+    fun onDraftChange(v: String) {
+        _state.value = _state.value.copy(draft = v)
+    }
+
+    fun sendDraft() {
+        val body = _state.value.draft.trim()
+        if (body.isEmpty()) return
+        conn?.sendChat(body)
+        _state.value = _state.value.copy(draft = "")
     }
 
     fun start() {
@@ -94,7 +143,6 @@ class RideDetailViewModel @Inject constructor(
                 .onSuccess { ride ->
                     _state.value = _state.value.copy(ride = ride, busy = false)
                     RideLocationService.start(ctx, id, authStore.token() ?: "")
-                    connectSocket(id)
                 }
                 .onFailure { _state.value = _state.value.copy(busy = false, error = it.message) }
         }
@@ -108,7 +156,6 @@ class RideDetailViewModel @Inject constructor(
                 .onSuccess { ride ->
                     _state.value = _state.value.copy(ride = ride, busy = false)
                     RideLocationService.stop(ctx)
-                    conn?.close()
                 }
                 .onFailure { _state.value = _state.value.copy(busy = false, error = it.message) }
         }
@@ -119,3 +166,11 @@ class RideDetailViewModel @Inject constructor(
         super.onCleared()
     }
 }
+
+private fun MessageOut.toLine(meId: String?): ChatLine = ChatLine(
+    id = id,
+    from = sender_id,
+    body = body,
+    at = created_at,
+    mine = meId != null && sender_id == meId,
+)

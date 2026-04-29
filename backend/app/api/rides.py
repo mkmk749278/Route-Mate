@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas import BookingCreate, BookingOut, RideCreate, RideOut
+from app.api.schemas import BookingCreate, BookingOut, MessageOut, RideCreate, RideOut
 from app.core.security import current_user_id
-from app.db.models import Booking, Ride, RideStatus
+from app.db.models import Booking, BookingStatus, Message, Ride, RideStatus
 from app.db.session import get_session
 from app.services.geo import st_point
 from app.services.rides import ride_to_out, seats_taken
@@ -114,7 +114,14 @@ async def create_booking(
     if existing is not None:
         return BookingOut.model_validate(existing)
 
-    booking = Booking(ride_id=ride_id, rider_id=user_id, seats=body.seats)
+    booking = Booking(
+        ride_id=ride_id,
+        rider_id=user_id,
+        seats=body.seats,
+        # Instant-book: no driver approval step in v0.4. v0.5+ may flip this
+        # to BookingStatus.pending behind a per-ride toggle.
+        status=BookingStatus.accepted,
+    )
     session.add(booking)
     await session.commit()
     await session.refresh(booking)
@@ -136,6 +143,40 @@ async def start_ride(
     await session.commit()
     await session.refresh(ride)
     return ride_to_out(ride, await seats_taken(session, ride.id))
+
+
+@router.get("/{ride_id}/messages", response_model=list[MessageOut])
+async def list_messages(
+    ride_id: UUID,
+    after: datetime | None = Query(default=None),
+    limit: int = Query(default=200, ge=1, le=500),
+    user_id: UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> list[MessageOut]:
+    """Chat backfill for the ride. Caller must be the driver or have a
+    non-cancelled booking on the ride."""
+    ride = await session.get(Ride, ride_id)
+    if ride is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if ride.driver_id != user_id:
+        booked = (
+            await session.execute(
+                select(Booking).where(
+                    Booking.ride_id == ride_id,
+                    Booking.rider_id == user_id,
+                    Booking.status != BookingStatus.cancelled,
+                )
+            )
+        ).scalar_one_or_none()
+        if booked is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
+    stmt = select(Message).where(Message.ride_id == ride_id).order_by(Message.created_at.asc())
+    if after is not None:
+        stmt = stmt.where(Message.created_at > after)
+    stmt = stmt.limit(limit)
+    rows = (await session.execute(stmt)).scalars().all()
+    return [MessageOut.model_validate(m) for m in rows]
 
 
 @router.post("/{ride_id}/complete", response_model=RideOut)

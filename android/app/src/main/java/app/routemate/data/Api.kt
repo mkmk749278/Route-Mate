@@ -82,6 +82,14 @@ import retrofit2.http.Query
 
 @Serializable data class GeocodeHit(val label: String, val lat: Double, val lng: Double)
 
+@Serializable data class MessageOut(
+    val id: String,
+    val ride_id: String,
+    val sender_id: String,
+    val body: String,
+    val created_at: String,
+)
+
 @Serializable data class RideBooking(val booking: BookingOut, val ride: RideOut)
 @Serializable data class TripsOut(val driving: List<RideOut>, val riding: List<RideBooking>)
 @Serializable data class DriverLocation(val lat: Double, val lng: Double, val ts: Long)
@@ -153,4 +161,11 @@ interface RouteMatesApi {
 
     @GET("v1/me/rides/{id}/location")
     suspend fun rideLocation(@Path("id") id: String): DriverLocation
+
+    @GET("v1/rides/{id}/messages")
+    suspend fun rideMessages(
+        @Path("id") id: String,
+        @Query("after") after: String? = null,
+        @Query("limit") limit: Int = 200,
+    ): List<MessageOut>
 }
