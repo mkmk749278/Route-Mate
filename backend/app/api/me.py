@@ -47,6 +47,8 @@ async def patch_me(
         user.name = body.name
     if body.photo_url is not None:
         user.photo_url = body.photo_url
+    if body.upi_id is not None:
+        user.upi_id = body.upi_id.strip() or None
     await session.commit()
     await session.refresh(user)
     return MeOut.model_validate(user)

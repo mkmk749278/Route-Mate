@@ -10,6 +10,7 @@ class UserOut(BaseModel):
     id: UUID
     name: str | None = None
     photo_url: str | None = None
+    upi_id: str | None = None
     rating_avg: float = 0
     rating_count: int = 0
 
@@ -21,6 +22,7 @@ class MeOut(UserOut):
 class MePatch(BaseModel):
     name: str | None = None
     photo_url: str | None = None
+    upi_id: str | None = None
 
 
 class AuthExchange(BaseModel):

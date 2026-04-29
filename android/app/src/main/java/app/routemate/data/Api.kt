@@ -14,6 +14,7 @@ import retrofit2.http.Query
     val id: String,
     val name: String? = null,
     val photo_url: String? = null,
+    val upi_id: String? = null,
     val rating_avg: Double = 0.0,
     val rating_count: Int = 0,
 )
@@ -22,6 +23,7 @@ import retrofit2.http.Query
     val id: String,
     val name: String? = null,
     val photo_url: String? = null,
+    val upi_id: String? = null,
     val phone: String? = null,
     val rating_avg: Double = 0.0,
     val rating_count: Int = 0,
@@ -30,6 +32,7 @@ import retrofit2.http.Query
 @Serializable data class MePatch(
     val name: String? = null,
     val photo_url: String? = null,
+    val upi_id: String? = null,
 )
 
 @Serializable data class AuthExchange(val id_token: String)

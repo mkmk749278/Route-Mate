@@ -1,7 +1,10 @@
 package app.routemate.ui.ride
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -128,6 +131,31 @@ fun RideDetailScreen(
                     Button(onClick = vm::complete, enabled = !state.busy) { Text("Complete") }
                 }
             }
+        }
+
+        val driverUpi = ride.driver.upi_id
+        if (!state.isMyRide
+            && !driverUpi.isNullOrBlank()
+            && (ride.status == "started" || ride.status == "completed")) {
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = {
+                    val driverName = ride.driver.name ?: "Route Mates driver"
+                    val intent = Intent(Intent.ACTION_VIEW, buildUpiUri(
+                        payee = driverUpi,
+                        payeeName = driverName,
+                        amount = ride.price_per_seat,
+                        note = "Route Mates ride",
+                    ))
+                    runCatching { context.startActivity(intent) }
+                        .onFailure {
+                            if (it is ActivityNotFoundException) {
+                                // No UPI app installed; show error inline via VM
+                            }
+                        }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Pay ₹${ride.price_per_seat} via UPI") }
         }
 
         if (state.canPromptForRating) {
@@ -315,6 +343,17 @@ private fun ChatPanel(
         Spacer(Modifier.height(8.dp))
     }
 }
+
+private fun buildUpiUri(payee: String, payeeName: String, amount: String, note: String): Uri =
+    Uri.Builder()
+        .scheme("upi")
+        .authority("pay")
+        .appendQueryParameter("pa", payee)
+        .appendQueryParameter("pn", payeeName)
+        .appendQueryParameter("am", amount)
+        .appendQueryParameter("cu", "INR")
+        .appendQueryParameter("tn", note)
+        .build()
 
 @Composable
 private fun ChatBubble(line: ChatLine) {
