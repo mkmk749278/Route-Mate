@@ -58,15 +58,33 @@ class SignInViewModel @Inject constructor(
     /** Branches on firebaseEnabled. Activity is required for the Firebase
      *  reCAPTCHA fallback path; on dev-login it's unused. */
     fun submitPhone(activity: Activity?) {
-        val phone = (_state.value as? SignInState.PhoneEntry)?.phone?.trim().orEmpty()
-        if (phone.length < 4) return
-        _state.value = SignInState.PhoneEntry(phone, busy = true)
+        val raw = (_state.value as? SignInState.PhoneEntry)?.phone.orEmpty()
+        val phone = normalizePhone(raw) ?: run {
+            _state.value = SignInState.Error("Enter a valid 10-digit phone number")
+            return
+        }
+        _state.value = SignInState.PhoneEntry(raw, busy = true)
 
         if (firebaseEnabled && activity != null) {
             sendOtpFirebase(phone, activity)
         } else {
             devLogin(phone)
         }
+    }
+
+    /** Coerce raw input to E.164. Defaults missing country code to India (+91).
+     *  Accepts "9876543210", "09876543210", "+919876543210", "91 98765 43210". */
+    private fun normalizePhone(raw: String): String? {
+        val digits = raw.filter { it.isDigit() }
+        val e164 = when {
+            raw.trim().startsWith("+") -> "+$digits"
+            digits.length == 10 -> "+91$digits"
+            digits.length == 11 && digits.startsWith("0") -> "+91${digits.drop(1)}"
+            digits.length == 12 && digits.startsWith("91") -> "+$digits"
+            else -> return null
+        }
+        // E.164: + followed by 8–15 digits.
+        return e164.takeIf { it.length in 9..16 }
     }
 
     fun verifyOtp() {
