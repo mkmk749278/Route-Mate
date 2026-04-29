@@ -63,6 +63,12 @@ fun TripsScreen(
                     RidingCard(rb) { onOpenRide(rb.ride.id) }
                 }
             }
+            if (state.awaitingRating.isNotEmpty()) {
+                item { SectionHeader("Rate your recent rides") }
+                items(state.awaitingRating, key = { "ar-${it.booking.id}" }) { rb ->
+                    RidingCard(rb) { onOpenRide(rb.ride.id) }
+                }
+            }
         }
     }
 }

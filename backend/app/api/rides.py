@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas import BookingCreate, BookingOut, MessageOut, RideCreate, RideOut
+from app.api.schemas import BookingCreate, BookingOut, MessageOut, RatingOut, RideCreate, RideOut
 from app.core.security import current_user_id
-from app.db.models import Booking, BookingStatus, Message, Ride, RideStatus
+from app.db.models import Booking, BookingStatus, Message, Rating, Ride, RideStatus
 from app.db.session import get_session
 from app.services.geo import st_point
 from app.services.rides import ride_to_out, seats_taken
@@ -177,6 +177,24 @@ async def list_messages(
     stmt = stmt.limit(limit)
     rows = (await session.execute(stmt)).scalars().all()
     return [MessageOut.model_validate(m) for m in rows]
+
+
+@router.get(
+    "/{ride_id}/ratings/me",
+    response_model=RatingOut | None,
+    summary="My rating on this ride, or null if I haven't rated yet",
+)
+async def my_rating(
+    ride_id: UUID,
+    user_id: UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> RatingOut | None:
+    row = (
+        await session.execute(
+            select(Rating).where(Rating.ride_id == ride_id, Rating.from_id == user_id)
+        )
+    ).scalar_one_or_none()
+    return RatingOut.model_validate(row) if row is not None else None
 
 
 @router.post("/{ride_id}/complete", response_model=RideOut)

@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -128,6 +130,25 @@ fun RideDetailScreen(
             }
         }
 
+        if (state.canPromptForRating) {
+            Spacer(Modifier.height(12.dp))
+            RatingSheet(
+                stars = state.ratingDraftStars,
+                text = state.ratingDraftText,
+                submitting = state.ratingSubmitting,
+                onStars = vm::onRatingStarsChange,
+                onText = vm::onRatingTextChange,
+                onSubmit = vm::submitRating,
+            )
+        } else if (state.myRating != null) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "Thanks — you rated this ride ★${state.myRating?.stars}.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
         Spacer(Modifier.height(12.dp))
         ChatPanel(
             chat = state.chat,
@@ -136,6 +157,52 @@ fun RideDetailScreen(
             onSend = vm::sendDraft,
             modifier = Modifier.weight(1f).fillMaxWidth(),
         )
+    }
+}
+
+@Composable
+private fun RatingSheet(
+    stars: Int,
+    text: String,
+    submitting: Boolean,
+    onStars: (Int) -> Unit,
+    onText: (String) -> Unit,
+    onSubmit: () -> Unit,
+) {
+    Surface(
+        tonalElevation = 1.dp,
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Text(
+                "How was your ride?",
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Spacer(Modifier.height(8.dp))
+            Row {
+                for (i in 1..5) {
+                    IconButton(onClick = { onStars(i) }) {
+                        Icon(
+                            imageVector = if (i <= stars) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                            contentDescription = "$i star",
+                        )
+                    }
+                }
+            }
+            OutlinedTextField(
+                value = text,
+                onValueChange = onText,
+                placeholder = { Text("Share a quick word (optional)") },
+                singleLine = false,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = onSubmit,
+                enabled = !submitting && stars in 1..5,
+            ) { Text(if (submitting) "Submitting…" else "Submit rating") }
+        }
     }
 }
 

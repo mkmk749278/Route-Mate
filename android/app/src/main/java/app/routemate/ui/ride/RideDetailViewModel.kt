@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import app.routemate.data.AuthStore
 import app.routemate.data.LatLng
 import app.routemate.data.MessageOut
+import app.routemate.data.RatingCreate
+import app.routemate.data.RatingOut
 import app.routemate.data.RideConnection
 import app.routemate.data.RideOut
 import app.routemate.data.RideRepository
@@ -36,9 +38,16 @@ data class RideDetailState(
     val meId: String? = null,
     val chat: List<ChatLine> = emptyList(),
     val draft: String = "",
+    val myRating: RatingOut? = null,
+    val ratingDraftStars: Int = 0,
+    val ratingDraftText: String = "",
+    val ratingSubmitting: Boolean = false,
     val busy: Boolean = false,
     val error: String? = null,
-)
+) {
+    val canPromptForRating: Boolean
+        get() = ride != null && ride.status == "completed" && !isMyRide && myRating == null
+}
 
 @HiltViewModel
 class RideDetailViewModel @Inject constructor(
@@ -68,6 +77,7 @@ class RideDetailViewModel @Inject constructor(
                     )
                     seedLastLocation(id)
                     seedChat(id)
+                    seedMyRating(id)
                     connectSocket(id)
                 }
                 .onFailure { _state.value = _state.value.copy(error = it.message) }
@@ -88,6 +98,53 @@ class RideDetailViewModel @Inject constructor(
         _state.value = _state.value.copy(
             chat = msgs.map { it.toLine(meId) },
         )
+    }
+
+    private suspend fun seedMyRating(id: String) {
+        val r = runCatching { api.myRating(id) }.getOrNull()
+        _state.value = _state.value.copy(myRating = r)
+    }
+
+    fun onRatingStarsChange(stars: Int) {
+        _state.value = _state.value.copy(ratingDraftStars = stars.coerceIn(1, 5))
+    }
+
+    fun onRatingTextChange(text: String) {
+        _state.value = _state.value.copy(ratingDraftText = text)
+    }
+
+    fun submitRating() {
+        val s = _state.value
+        val ride = s.ride ?: return
+        if (s.ratingDraftStars !in 1..5) return
+        if (s.ratingSubmitting) return
+        _state.value = s.copy(ratingSubmitting = true, error = null)
+
+        viewModelScope.launch {
+            runCatching {
+                api.rate(
+                    ride.id,
+                    RatingCreate(
+                        to_user_id = ride.driver.id,
+                        stars = s.ratingDraftStars,
+                        text = s.ratingDraftText.trim().ifBlank { null },
+                    ),
+                )
+                api.myRating(ride.id)
+            }
+                .onSuccess {
+                    _state.value = _state.value.copy(
+                        myRating = it,
+                        ratingSubmitting = false,
+                    )
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(
+                        ratingSubmitting = false,
+                        error = it.message,
+                    )
+                }
+        }
     }
 
     private fun connectSocket(id: String) {

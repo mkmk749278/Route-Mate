@@ -15,10 +15,12 @@ import kotlinx.coroutines.launch
 data class TripsState(
     val driving: List<RideOut> = emptyList(),
     val riding: List<RideBooking> = emptyList(),
+    val awaitingRating: List<RideBooking> = emptyList(),
     val busy: Boolean = false,
     val error: String? = null,
 ) {
-    val isEmpty: Boolean get() = driving.isEmpty() && riding.isEmpty()
+    val isEmpty: Boolean get() =
+        driving.isEmpty() && riding.isEmpty() && awaitingRating.isEmpty()
 }
 
 @HiltViewModel
@@ -34,7 +36,11 @@ class TripsViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { rides.myTrips() }
                 .onSuccess {
-                    _state.value = TripsState(driving = it.driving, riding = it.riding)
+                    _state.value = TripsState(
+                        driving = it.driving,
+                        riding = it.riding,
+                        awaitingRating = it.awaiting_rating,
+                    )
                 }
                 .onFailure {
                     _state.value = _state.value.copy(busy = false, error = it.message)
