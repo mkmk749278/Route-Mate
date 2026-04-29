@@ -44,6 +44,7 @@ class User(Base):
     phone: Mapped[str | None] = mapped_column(String(32), index=True)
     name: Mapped[str | None] = mapped_column(String(120))
     photo_url: Mapped[str | None] = mapped_column(String(500))
+    upi_id: Mapped[str | None] = mapped_column(String(64))
     rating_avg: Mapped[float] = mapped_column(Numeric(3, 2), default=0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(
