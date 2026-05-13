@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.schemas import AuthExchange, AuthResult, MeOut
 from app.core.config import settings
 from app.core.firebase import verify_firebase_id_token
+from app.core.ratelimit import limiter
 from app.core.security import create_app_jwt
 from app.db.models import User
 from app.db.session import get_session
@@ -19,7 +20,9 @@ class DevLoginRequest(BaseModel):
 
 
 @router.post("/dev-login", response_model=AuthResult)
+@limiter.limit("10/minute")
 async def dev_login(
+    request: Request,
     body: DevLoginRequest,
     session: AsyncSession = Depends(get_session),
 ) -> AuthResult:
@@ -51,7 +54,9 @@ async def dev_login(
 
 
 @router.post("/exchange", response_model=AuthResult)
+@limiter.limit("10/minute")
 async def exchange(
+    request: Request,
     body: AuthExchange,
     session: AsyncSession = Depends(get_session),
 ) -> AuthResult:

@@ -26,8 +26,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,11 +39,15 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +58,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.routemate.data.LatLng
+import kotlinx.coroutines.launch
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -102,6 +110,14 @@ fun RideDetailScreen(
                 origin = ride.origin,
                 destination = ride.destination,
                 driver = state.driverPin,
+            )
+        }
+
+        if (ride.status == "started" || ride.status == "scheduled") {
+            Spacer(Modifier.height(8.dp))
+            SafetyRow(
+                onShare = vm::createShareUrl,
+                onSos = vm::reportSos,
             )
         }
 
@@ -202,6 +218,82 @@ fun RideDetailScreen(
         )
     }
 }
+
+@Composable
+private fun SafetyRow(
+    onShare: suspend () -> String?,
+    onSos: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var confirmSos by remember { mutableStateOf(false) }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(
+            onClick = {
+                scope.launch {
+                    val url = onShare() ?: return@launch
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(
+                            Intent.EXTRA_TEXT,
+                            "Follow my Route Mates ride live: $url",
+                        )
+                    }
+                    runCatching {
+                        context.startActivity(
+                            Intent.createChooser(intent, "Share live trip")
+                        )
+                    }
+                }
+            },
+            modifier = Modifier.weight(1f),
+        ) {
+            Icon(Icons.Outlined.Share, contentDescription = null)
+            Spacer(Modifier.width(6.dp))
+            Text("Share trip")
+        }
+
+        Button(
+            onClick = { confirmSos = true },
+            modifier = Modifier.weight(1f),
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            ),
+        ) {
+            Icon(Icons.Outlined.Warning, contentDescription = null)
+            Spacer(Modifier.width(6.dp))
+            Text("Emergency")
+        }
+    }
+
+    if (confirmSos) {
+        AlertDialog(
+            onDismissRequest = { confirmSos = false },
+            title = { Text("Call 112?") },
+            text = {
+                Text(
+                    "We'll log this as an incident and open the dialer to India's "
+                        + "emergency line. Share your trip link with a trusted contact "
+                        + "before or after the call."
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    confirmSos = false
+                    onSos()
+                    val dial = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
+                    runCatching { context.startActivity(dial) }
+                }) { Text("Call 112") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmSos = false }) { Text("Cancel") }
+            },
+        )
+    }
+}
+
 
 @Composable
 private fun RatingSheet(

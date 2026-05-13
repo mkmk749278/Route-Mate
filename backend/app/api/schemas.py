@@ -15,14 +15,21 @@ class UserOut(BaseModel):
     rating_count: int = 0
 
 
+class TrustedContact(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    phone: str = Field(..., min_length=4, max_length=32)
+
+
 class MeOut(UserOut):
     phone: str | None = None
+    trusted_contacts: list[TrustedContact] = []
 
 
 class MePatch(BaseModel):
     name: str | None = None
     photo_url: str | None = None
     upi_id: str | None = None
+    trusted_contacts: list[TrustedContact] | None = None
 
 
 class AuthExchange(BaseModel):
@@ -140,3 +147,76 @@ class MessageOut(BaseModel):
     sender_id: UUID
     body: str
     created_at: datetime
+
+
+class IncidentCreate(BaseModel):
+    kind: str = Field(..., min_length=2, max_length=32)
+    description: str | None = None
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
+
+
+class IncidentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    ride_id: UUID
+    kind: str
+    description: str | None = None
+    created_at: datetime
+
+
+class ShareTokenOut(BaseModel):
+    token: str
+    expires_at: datetime
+
+
+class SavedRouteIn(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    origin: LatLng
+    destination: LatLng
+    origin_label: str = Field(..., min_length=1, max_length=200)
+    destination_label: str = Field(..., min_length=1, max_length=200)
+    recurrence_days: int = Field(default=0, ge=0, le=127)
+
+
+class SavedRouteOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    name: str
+    origin: LatLng
+    destination: LatLng
+    origin_label: str
+    destination_label: str
+    recurrence_days: int
+
+
+class SharedRideView(BaseModel):
+    """Public payload returned by the share endpoint. Strips PII like phone
+    numbers and only exposes what's needed for a trusted contact to watch
+    the ride progress."""
+    ride_id: UUID
+    status: str
+    origin_label: str
+    destination_label: str
+    origin: LatLng
+    destination: LatLng
+    driver_name: str | None = None
+    driver_rating_avg: float = 0
+    last_known: DriverLocation | None = None
+    expires_at: datetime
+
+
+class UserSettingsOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    quiet_start_hour: int | None = None
+    quiet_end_hour: int | None = None
+    muted_kinds: list[str] = []
+
+
+class UserSettingsPatch(BaseModel):
+    quiet_start_hour: int | None = Field(default=None, ge=0, le=23)
+    quiet_end_hour: int | None = Field(default=None, ge=0, le=23)
+    muted_kinds: list[str] | None = None
+    # Sentinel: explicitly clear quiet hours by sending both as null. We
+    # distinguish "unset" (field absent) from "set to null" by checking the
+    # raw model via model_fields_set.

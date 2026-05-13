@@ -26,6 +26,7 @@ import app.routemate.data.AuthRepository
 import app.routemate.data.MeOut
 import app.routemate.data.MePatch
 import app.routemate.data.RouteMatesApi
+import app.routemate.data.TrustedContact
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +38,9 @@ data class ProfileState(
     val me: MeOut? = null,
     val nameDraft: String = "",
     val upiDraft: String = "",
+    val contacts: List<TrustedContact> = emptyList(),
+    val newContactName: String = "",
+    val newContactPhone: String = "",
     val saving: Boolean = false,
     val savedAt: Long? = null,
     val error: String? = null,
@@ -59,6 +63,7 @@ class ProfileViewModel @Inject constructor(
                         me = me,
                         nameDraft = me.name.orEmpty(),
                         upiDraft = me.upi_id.orEmpty(),
+                        contacts = me.trusted_contacts,
                     )
                 }
                 .onFailure { _state.value = _state.value.copy(error = it.message) }
@@ -67,6 +72,26 @@ class ProfileViewModel @Inject constructor(
 
     fun onNameChange(v: String) { _state.value = _state.value.copy(nameDraft = v) }
     fun onUpiChange(v: String) { _state.value = _state.value.copy(upiDraft = v) }
+    fun onContactNameChange(v: String) { _state.value = _state.value.copy(newContactName = v) }
+    fun onContactPhoneChange(v: String) { _state.value = _state.value.copy(newContactPhone = v) }
+
+    fun addContact() {
+        val s = _state.value
+        val name = s.newContactName.trim()
+        val phone = s.newContactPhone.trim()
+        if (name.isEmpty() || phone.length < 4) return
+        _state.value = s.copy(
+            contacts = s.contacts + TrustedContact(name, phone),
+            newContactName = "",
+            newContactPhone = "",
+        )
+    }
+
+    fun removeContact(idx: Int) {
+        val s = _state.value
+        if (idx !in s.contacts.indices) return
+        _state.value = s.copy(contacts = s.contacts.toMutableList().also { it.removeAt(idx) })
+    }
 
     fun save() {
         val s = _state.value
@@ -77,6 +102,7 @@ class ProfileViewModel @Inject constructor(
                     MePatch(
                         name = s.nameDraft.trim().ifBlank { null },
                         upi_id = s.upiDraft.trim(),
+                        trusted_contacts = s.contacts,
                     )
                 )
             }
@@ -85,6 +111,7 @@ class ProfileViewModel @Inject constructor(
                         me = it,
                         nameDraft = it.name.orEmpty(),
                         upiDraft = it.upi_id.orEmpty(),
+                        contacts = it.trusted_contacts,
                         saving = false,
                         savedAt = System.currentTimeMillis(),
                     )
@@ -143,6 +170,52 @@ fun ProfileScreen(
                 )
             },
         )
+
+        Spacer(Modifier.height(20.dp))
+        Text(
+            "Trusted contacts",
+            style = MaterialTheme.typography.titleSmall,
+        )
+        Text(
+            "We'll alert these numbers if you trigger the in-ride Emergency button.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        state.contacts.forEachIndexed { idx, c ->
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text(
+                    "${c.name} · ${c.phone}",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                androidx.compose.material3.TextButton(onClick = { vm.removeContact(idx) }) {
+                    Text("Remove")
+                }
+            }
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            OutlinedTextField(
+                value = state.newContactName,
+                onValueChange = vm::onContactNameChange,
+                label = { Text("Name") },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+            OutlinedTextField(
+                value = state.newContactPhone,
+                onValueChange = vm::onContactPhoneChange,
+                label = { Text("Phone") },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        androidx.compose.material3.TextButton(onClick = vm::addContact) {
+            Text("Add contact")
+        }
 
         Spacer(Modifier.height(12.dp))
         Row(

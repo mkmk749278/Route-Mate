@@ -19,6 +19,8 @@ import retrofit2.http.Query
     val rating_count: Int = 0,
 )
 
+@Serializable data class TrustedContact(val name: String, val phone: String)
+
 @Serializable data class MeOut(
     val id: String,
     val name: String? = null,
@@ -27,13 +29,32 @@ import retrofit2.http.Query
     val phone: String? = null,
     val rating_avg: Double = 0.0,
     val rating_count: Int = 0,
+    val trusted_contacts: List<TrustedContact> = emptyList(),
 )
 
 @Serializable data class MePatch(
     val name: String? = null,
     val photo_url: String? = null,
     val upi_id: String? = null,
+    val trusted_contacts: List<TrustedContact>? = null,
 )
+
+@Serializable data class IncidentCreate(
+    val kind: String,
+    val description: String? = null,
+    val lat: Double? = null,
+    val lng: Double? = null,
+)
+
+@Serializable data class IncidentOut(
+    val id: String,
+    val ride_id: String,
+    val kind: String,
+    val description: String? = null,
+    val created_at: String,
+)
+
+@Serializable data class ShareTokenOut(val token: String, val expires_at: String)
 
 @Serializable data class AuthExchange(val id_token: String)
 @Serializable data class DevLoginRequest(val phone: String, val name: String? = null)
@@ -205,4 +226,19 @@ interface RouteMatesApi {
         @Query("after") after: String? = null,
         @Query("limit") limit: Int = 200,
     ): List<MessageOut>
+
+    @POST("v1/rides/{id}/share")
+    suspend fun createShareToken(@Path("id") id: String): ShareTokenOut
+
+    @POST("v1/rides/{id}/incidents")
+    suspend fun reportIncident(
+        @Path("id") id: String,
+        @Body body: IncidentCreate,
+    ): IncidentOut
+
+    @POST("v1/users/{id}/block")
+    suspend fun blockUser(@Path("id") id: String): retrofit2.Response<Unit>
+
+    @retrofit2.http.DELETE("v1/users/{id}/block")
+    suspend fun unblockUser(@Path("id") id: String): retrofit2.Response<Unit>
 }

@@ -11,12 +11,15 @@ dependencies = [
   "sqlalchemy>=2.0.32",
   "asyncpg>=0.29",
   "geoalchemy2>=0.15",
+  "shapely>=2.0",
   "alembic>=1.13",
   "redis>=5.0",
   "firebase-admin>=6.5",
   "python-jose[cryptography]>=3.3",
   "httpx>=0.27",
   "orjson>=3.10",
+  "slowapi>=0.1.9",
+  "prometheus-client>=0.20",
 ]
 
 [project.optional-dependencies]
@@ -39,4 +42,11 @@ ignore = ["B008"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# The app's async SQLAlchemy engine is module-level and binds to whichever
+# event loop first touches it. pytest-asyncio 0.23+ defaults to a fresh
+# function-scoped loop per test, so the second test trips
+# "Future attached to a different loop". Sharing one session-scoped loop
+# across fixtures + tests keeps the engine + asyncpg pool valid.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]

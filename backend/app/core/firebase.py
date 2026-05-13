@@ -45,6 +45,11 @@ def verify_firebase_id_token(id_token: str) -> dict:
 
 
 def send_fcm(token: str, title: str, body: str, data: dict[str, str] | None = None) -> None:
+    """Synchronous, blocking send. Raises on failure so the caller can
+    decide whether to prune the token (e.g. on UnregisteredError) or
+    just log and move on. Silently no-ops when Firebase isn't configured
+    so dev-mode deployments keep working without the Admin SDK.
+    """
     if _app is None:
         log.warning("FCM skipped (firebase not initialised)")
         return
@@ -53,7 +58,4 @@ def send_fcm(token: str, title: str, body: str, data: dict[str, str] | None = No
         notification=messaging.Notification(title=title, body=body),
         data=data or {},
     )
-    try:
-        messaging.send(msg)
-    except Exception:  # noqa: BLE001
-        log.exception("FCM send failed")
+    messaging.send(msg)

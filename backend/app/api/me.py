@@ -15,10 +15,12 @@ from app.api.schemas import (
     RideBooking,
     TripsOut,
     UserOut,
+    UserSettingsOut,
+    UserSettingsPatch,
 )
 from app.core.config import settings
 from app.core.security import current_user_id
-from app.db.models import Booking, BookingStatus, Rating, Ride, RideStatus, User
+from app.db.models import Booking, BookingStatus, Rating, Ride, RideStatus, User, UserSettings
 from app.db.session import get_session
 from app.services.rides import ride_to_out, seats_taken
 
@@ -51,6 +53,8 @@ async def patch_me(
         user.photo_url = body.photo_url
     if body.upi_id is not None:
         user.upi_id = body.upi_id.strip() or None
+    if body.trusted_contacts is not None:
+        user.trusted_contacts = [c.model_dump() for c in body.trusted_contacts]
     await session.commit()
     await session.refresh(user)
     return MeOut.model_validate(user)
@@ -167,6 +171,49 @@ async def my_trips(
         awaiting_rating=awaiting_rating,
         awaiting_driver_rating=awaiting_driver_rating,
     )
+
+
+@router.get("/settings", response_model=UserSettingsOut)
+async def get_settings(
+    user_id: UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> UserSettingsOut:
+    row = (
+        await session.execute(
+            select(UserSettings).where(UserSettings.user_id == user_id)
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return UserSettingsOut()
+    return UserSettingsOut.model_validate(row)
+
+
+@router.patch("/settings", response_model=UserSettingsOut)
+async def patch_settings(
+    body: UserSettingsPatch,
+    user_id: UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> UserSettingsOut:
+    row = (
+        await session.execute(
+            select(UserSettings).where(UserSettings.user_id == user_id)
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        row = UserSettings(user_id=user_id, muted_kinds=[])
+        session.add(row)
+
+    fields = body.model_fields_set
+    if "quiet_start_hour" in fields:
+        row.quiet_start_hour = body.quiet_start_hour
+    if "quiet_end_hour" in fields:
+        row.quiet_end_hour = body.quiet_end_hour
+    if "muted_kinds" in fields and body.muted_kinds is not None:
+        row.muted_kinds = body.muted_kinds
+
+    await session.commit()
+    await session.refresh(row)
+    return UserSettingsOut.model_validate(row)
 
 
 @router.get(

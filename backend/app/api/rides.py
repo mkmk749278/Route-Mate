@@ -1,14 +1,19 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from geoalchemy2 import Geometry
+from sqlalchemy import cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import BookingCreate, BookingOut, MessageOut, RatingOut, RideCreate, RideOut
+from app.core.config import settings as app_settings
+from app.core.ratelimit import limiter
 from app.core.security import current_user_id
-from app.db.models import Booking, BookingStatus, Message, Rating, Ride, RideStatus
+from app.db.models import Booking, BookingStatus, Message, Rating, Ride, RideStatus, User
 from app.db.session import get_session
+from app.services import notifications as notify
+from app.services import routing
 from app.services.geo import st_point
 from app.services.rides import ride_to_out, seats_taken
 
@@ -23,6 +28,16 @@ async def create_ride(
     user_id: UUID = Depends(current_user_id),
     session: AsyncSession = Depends(get_session),
 ) -> RideOut:
+    # Fetch the driving polyline once per ride. Failure is non-fatal —
+    # ride is still created, and /v1/rides/search falls back to the
+    # endpoint-radius behaviour for rides without polyline_geom.
+    route = await routing.fetch_route(
+        body.origin.lat, body.origin.lng, body.destination.lat, body.destination.lng
+    )
+    polyline_geom = (
+        func.ST_GeogFromText(route.as_wkt_linestring()) if route is not None else None
+    )
+
     ride = Ride(
         driver_id=user_id,
         origin=st_point(body.origin.lat, body.origin.lng),
@@ -30,6 +45,7 @@ async def create_ride(
         origin_label=body.origin_label,
         destination_label=body.destination_label,
         polyline=body.polyline,
+        polyline_geom=polyline_geom,
         depart_at=body.depart_at,
         seats_total=body.seats_total,
         price_per_seat=body.price_per_seat,
@@ -87,6 +103,7 @@ async def _materialize_next_recurring(session: AsyncSession, ride: Ride) -> None
         origin_label=ride.origin_label,
         destination_label=ride.destination_label,
         polyline=ride.polyline,
+        polyline_geom=ride.polyline_geom,
         depart_at=next_depart,
         seats_total=ride.seats_total,
         price_per_seat=ride.price_per_seat,
@@ -97,7 +114,9 @@ async def _materialize_next_recurring(session: AsyncSession, ride: Ride) -> None
 
 
 @router.get("/search", response_model=list[RideOut])
+@limiter.limit("60/minute")
 async def search_rides(
+    request: Request,
     from_lat: float = Query(...),
     from_lng: float = Query(...),
     to_lat: float = Query(...),
@@ -105,18 +124,43 @@ async def search_rides(
     depart_after: datetime | None = None,
     depart_before: datetime | None = None,
     radius_m: int = Query(SEARCH_RADIUS_METERS, ge=100, le=10000),
+    user_id: UUID = Depends(current_user_id),
     session: AsyncSession = Depends(get_session),
 ) -> list[RideOut]:
     origin_pt = st_point(from_lat, from_lng)
     dest_pt = st_point(to_lat, to_lng)
 
+    me = await session.get(User, user_id)
+    my_blocks: list[UUID] = list((me.blocked_user_ids or []) if me else [])
+
+    # Phase 4-lite: prefer corridor (LINESTRING-aware) match if the ride
+    # has a polyline_geom, fall back to endpoint-radius otherwise. The
+    # direction guard via ST_LineLocatePoint stops us from showing rides
+    # going the wrong way along the route. ST_LineLocatePoint is a
+    # geometry-space operator, so we cast Geography → Geometry first.
+    corridor = app_settings.route_corridor_meters
+    line_geom = cast(Ride.polyline_geom, Geometry)
+    origin_geom = cast(origin_pt, Geometry)
+    dest_geom = cast(dest_pt, Geometry)
+    polyline_match = (
+        Ride.polyline_geom.isnot(None)
+        & func.ST_DWithin(Ride.polyline_geom, origin_pt, corridor)
+        & func.ST_DWithin(Ride.polyline_geom, dest_pt, corridor)
+        & (
+            func.ST_LineLocatePoint(line_geom, origin_geom)
+            < func.ST_LineLocatePoint(line_geom, dest_geom)
+        )
+    )
+    endpoint_match = (
+        Ride.polyline_geom.is_(None)
+        & func.ST_DWithin(Ride.origin, origin_pt, radius_m)
+        & func.ST_DWithin(Ride.destination, dest_pt, radius_m)
+    )
+
     stmt = (
         select(Ride)
-        .where(
-            Ride.status == RideStatus.scheduled,
-            func.ST_DWithin(Ride.origin, origin_pt, radius_m),
-            func.ST_DWithin(Ride.destination, dest_pt, radius_m),
-        )
+        .where(Ride.status == RideStatus.scheduled)
+        .where(polyline_match | endpoint_match)
         .order_by(Ride.depart_at.asc())
         .limit(50)
     )
@@ -124,6 +168,16 @@ async def search_rides(
         stmt = stmt.where(Ride.depart_at >= depart_after)
     if depart_before is not None:
         stmt = stmt.where(Ride.depart_at <= depart_before)
+    if my_blocks:
+        stmt = stmt.where(Ride.driver_id.notin_(my_blocks))
+    # Also drop rides whose driver has blocked the caller.
+    blocking_me = (
+        await session.execute(
+            select(User.id).where(User.blocked_user_ids.any(user_id))  # type: ignore[arg-type]
+        )
+    ).scalars().all()
+    if blocking_me:
+        stmt = stmt.where(Ride.driver_id.notin_(blocking_me))
 
     rides = (await session.execute(stmt)).scalars().all()
     out: list[RideOut] = []
@@ -162,6 +216,14 @@ async def create_booking(
     if ride.status != RideStatus.scheduled:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="ride not bookable")
 
+    # Refuse if either party has blocked the other.
+    me = await session.get(User, user_id)
+    driver = await session.get(User, ride.driver_id)
+    if (me and ride.driver_id in (me.blocked_user_ids or [])) or (
+        driver and user_id in (driver.blocked_user_ids or [])
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="blocked")
+
     existing = (
         await session.execute(
             select(Booking).where(Booking.ride_id == ride_id, Booking.rider_id == user_id)
@@ -181,6 +243,18 @@ async def create_booking(
     session.add(booking)
     await session.commit()
     await session.refresh(booking)
+
+    await notify.notify_user(
+        session,
+        ride.driver_id,
+        kind=notify.KIND_BOOKING_CREATED,
+        title="New booking",
+        body=(
+            f"{body.seats} seat(s) booked on your "
+            f"{ride.origin_label} → {ride.destination_label} ride."
+        ),
+        data={"ride_id": str(ride_id), "booking_id": str(booking.id)},
+    )
     return BookingOut.model_validate(booking)
 
 
@@ -198,6 +272,23 @@ async def start_ride(
     ride.status = RideStatus.started
     await session.commit()
     await session.refresh(ride)
+
+    accepted = (
+        await session.execute(
+            select(Booking.rider_id).where(
+                Booking.ride_id == ride_id, Booking.status == BookingStatus.accepted
+            )
+        )
+    ).scalars().all()
+    for rider_id in accepted:
+        await notify.notify_user(
+            session,
+            rider_id,
+            kind=notify.KIND_RIDE_STARTED,
+            title="Your driver is on the way",
+            body=f"{ride.origin_label} → {ride.destination_label}",
+            data={"ride_id": str(ride_id)},
+        )
     return ride_to_out(ride, await seats_taken(session, ride.id))
 
 
@@ -299,6 +390,16 @@ async def cancel_ride(
         b.status = BookingStatus.cancelled
     await session.commit()
     await session.refresh(ride)
+
+    for b in bookings:
+        await notify.notify_user(
+            session,
+            b.rider_id,
+            kind=notify.KIND_RIDE_CANCELLED,
+            title="Ride cancelled",
+            body=f"Your driver cancelled the {ride.origin_label} → {ride.destination_label} ride.",
+            data={"ride_id": str(ride_id)},
+        )
     return ride_to_out(ride, await seats_taken(session, ride.id))
 
 
