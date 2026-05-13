@@ -24,6 +24,25 @@ Phase 9 (observability + scale)  →  Phase 10 (polish + i18n)
 [deferred]  Phase 3 (DigiLocker KYC) · Phase 7 (UPI Collect + corporate rides)
 ```
 
+## Status (2026-05-13)
+
+Phases 1, 2, 5 landed in full. Phases 4, 6, 8, 9, 10 landed in a deliberate
+"lite" cut — the scope per-phase is annotated below with the follow-ups
+that were trimmed for time.
+
+| Phase | State            | Branch | Notes |
+|-------|------------------|--------|-------|
+| 1     | ✅ shipped       | `claude/document-project-status-bYMcQ` |       |
+| 2     | ✅ shipped       | same   | audio recording moved to Phase 8 follow-up |
+| 4     | ⚠️ lite          | same   | self-host OSRM + learned ranker → 4b |
+| 5     | ✅ shipped       | same   |       |
+| 6     | ⚠️ lite          | same   | Trips/Find cache + WorkManager chat retry → 6b |
+| 8     | ⚠️ lite          | same   | stopped-vehicle + opt-in audio recording → 8b |
+| 9     | ⚠️ lite          | same   | OpenTelemetry + Play Integrity + uvicorn workers → 9b |
+| 10    | ⚠️ lite          | same   | Baseline Profiles + referral codes + Android UI for saved routes + Kannada/Tamil → 10b |
+| 3     | ⏸ deferred       | n/a    | DigiLocker KYC, MV-Aggregator-Guidelines compliance |
+| 7     | ⏸ deferred       | n/a    | UPI Collect, auto-split, corporate ride groups |
+
 ## Phase 1 — Stability + foundations (1–2 days)
 
 Bare minimum so we can iterate safely on top.

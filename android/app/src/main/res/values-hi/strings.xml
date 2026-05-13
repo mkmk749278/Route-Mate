@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Route Mates</string>
+    <string name="tab_find">खोजें</string>
+    <string name="tab_offer">ऑफ़र</string>
+    <string name="tab_trips">यात्राएँ</string>
+    <string name="tab_profile">प्रोफ़ाइल</string>
+    <string name="action_sign_in">साइन इन करें</string>
+    <string name="action_continue">जारी रखें</string>
+    <string name="action_post_ride">राइड पोस्ट करें</string>
+    <string name="action_book">सीट बुक करें</string>
+    <string name="hint_phone">फ़ोन नंबर</string>
+    <string name="hint_otp">सत्यापन कोड</string>
+    <string name="hint_origin">कहाँ से</string>
+    <string name="hint_destination">कहाँ तक</string>
+    <string name="ride_active">सक्रिय राइड</string>
+    <string name="loading">लोड हो रहा है…</string>
+</resources>

@@ -4,7 +4,8 @@ _Last updated: 2026-05-13_
 
 A snapshot of where Route Mates is today. See `README.md` for setup and the
 deployment story; this file tracks what has shipped, what is in flight, and
-what remains.
+what remains. The execution plan that drove the current branch lives in
+`ROADMAP.md`.
 
 ## Current release
 
@@ -12,6 +13,25 @@ what remains.
 `google-services.json` is present (unblocks dev builds without Firebase
 config). Latest commit on `main` is `d87e4b9`: SignIn defaults the country
 code to `+91` and normalises to E.164.
+
+## In flight on `claude/document-project-status-bYMcQ`
+
+Six "lite" phases from `ROADMAP.md` are landed on this branch ahead of a
+merge to `main`:
+
+| Commit    | Phase | Highlight |
+|-----------|-------|-----------|
+| `b24224f` | 1     | dynamic-color crash fix; JSON access logs + request IDs; Crashlytics (conditional); AuthStore token cache; 4 new pytest files |
+| `27c6e56` | 5     | `notify_user` helper + lifecycle hooks (booking + ride state); `user_settings` table for quiet hours / muted kinds; `FirebaseMessagingService` + `routemate://ride/{id}` deeplink |
+| `3f44fd3` | 2     | `trusted_contacts`, `blocked_user_ids`, `incidents`, `share_tokens`, SOS button (calls 112 + logs incident), system-share trip link, block-list filters on search + booking |
+| `3659c50` | 4     | `polyline_geom Geography(LINESTRING)` with GIST; OSRM routing service; corridor-based search with directionality |
+| `5ab579d` | 6     | Room scaffolding + write-through chat cache; WebSocket exponential-backoff auto-reconnect |
+| `a57da76` | 8     | RideCheck-style off-route anomaly detector running in the api lifespan loop |
+| `4907a75` | 9     | slowapi rate limiting on hot endpoints; Prometheus `/metrics` |
+| (this)    | 10    | Hindi `values-hi/strings.xml`; backend saved-routes CRUD |
+
+Phase 3 (DigiLocker KYC) and Phase 7 (UPI Collect + corporate rides) remain
+deferred; see ROADMAP.md.
 
 Latest APK is published on GitHub Releases by `android.yml`; the API runs as
 `ghcr.io/<owner>/routemate-api:sha-…` on the VPS, redeployed by `backend.yml`

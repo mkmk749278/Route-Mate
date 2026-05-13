@@ -208,3 +208,26 @@ class ShareToken(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class SavedRoute(Base):
+    __tablename__ = "saved_routes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "name", name="uq_saved_route_user_name"),
+    )
+
+    id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    origin_lat: Mapped[float] = mapped_column(Numeric(9, 6))
+    origin_lng: Mapped[float] = mapped_column(Numeric(9, 6))
+    destination_lat: Mapped[float] = mapped_column(Numeric(9, 6))
+    destination_lng: Mapped[float] = mapped_column(Numeric(9, 6))
+    origin_label: Mapped[str] = mapped_column(String(200))
+    destination_label: Mapped[str] = mapped_column(String(200))
+    recurrence_days: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

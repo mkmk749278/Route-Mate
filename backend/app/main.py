@@ -6,7 +6,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.api import auth, bookings, devices, geocode, me, ratings, rides, safety
+from app.api import (
+    auth,
+    bookings,
+    devices,
+    geocode,
+    me,
+    ratings,
+    rides,
+    safety,
+    saved_routes,
+)
 from app.core.config import settings
 from app.core.firebase import init_firebase
 from app.core.logging import RequestContextMiddleware, configure_logging
@@ -73,4 +83,7 @@ app.include_router(ratings.router, prefix="/v1/rides", tags=["ratings"])
 app.include_router(devices.router, prefix="/v1/devices", tags=["devices"])
 app.include_router(geocode.router, prefix="/v1/geocode", tags=["geocode"])
 app.include_router(safety.router, prefix="/v1", tags=["safety"])
+app.include_router(
+    saved_routes.router, prefix="/v1/me/saved-routes", tags=["saved-routes"]
+)
 app.include_router(ws_router, prefix="/v1/ws", tags=["ws"])

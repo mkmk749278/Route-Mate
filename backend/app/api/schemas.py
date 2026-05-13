@@ -170,6 +170,26 @@ class ShareTokenOut(BaseModel):
     expires_at: datetime
 
 
+class SavedRouteIn(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    origin: LatLng
+    destination: LatLng
+    origin_label: str = Field(..., min_length=1, max_length=200)
+    destination_label: str = Field(..., min_length=1, max_length=200)
+    recurrence_days: int = Field(default=0, ge=0, le=127)
+
+
+class SavedRouteOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    name: str
+    origin: LatLng
+    destination: LatLng
+    origin_label: str
+    destination_label: str
+    recurrence_days: int
+
+
 class SharedRideView(BaseModel):
     """Public payload returned by the share endpoint. Strips PII like phone
     numbers and only exposes what's needed for a trusted contact to watch
