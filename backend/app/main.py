@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,6 +9,7 @@ from app.core.config import settings
 from app.core.firebase import init_firebase
 from app.core.logging import RequestContextMiddleware, configure_logging
 from app.db.session import dispose_engine
+from app.services import anomaly
 from app.ws.ride import router as ws_router
 
 
@@ -15,8 +17,16 @@ from app.ws.ride import router as ws_router
 async def lifespan(_: FastAPI):
     configure_logging()
     init_firebase()
-    yield
-    await dispose_engine()
+    task = asyncio.create_task(anomaly.run_loop(), name="anomaly-loop")
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, Exception):  # noqa: BLE001
+            pass
+        await dispose_engine()
 
 
 app = FastAPI(title="Route Mates API", version="0.1.0", lifespan=lifespan)

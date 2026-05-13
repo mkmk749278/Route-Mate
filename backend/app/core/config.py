@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     osrm_timeout_seconds: float = Field(default=8.0)
     # Half-width of the "is this ride on my route?" band, in meters.
     route_corridor_meters: int = Field(default=1500)
+    # Phase 8 anomaly detection — how often the loop wakes, and the
+    # off-route distance + consecutive-checks threshold before we fire a
+    # "everything OK?" push to both driver and booked riders.
+    anomaly_check_interval_seconds: int = Field(default=30)
+    anomaly_off_route_meters: int = Field(default=500)
+    anomaly_off_route_consecutive_checks: int = Field(default=3)
 
 
 @lru_cache
