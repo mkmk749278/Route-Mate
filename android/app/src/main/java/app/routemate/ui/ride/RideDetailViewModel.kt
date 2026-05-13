@@ -15,6 +15,8 @@ import app.routemate.data.RideOut
 import app.routemate.data.RideRepository
 import app.routemate.data.RideSocket
 import app.routemate.data.RouteMatesApi
+import app.routemate.data.local.MessageDao
+import app.routemate.data.local.MessageEntity
 import app.routemate.service.RideLocationService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -75,6 +77,7 @@ class RideDetailViewModel @Inject constructor(
     private val socket: RideSocket,
     private val authStore: AuthStore,
     private val api: RouteMatesApi,
+    private val messages: MessageDao,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RideDetailState())
@@ -121,11 +124,22 @@ class RideDetailViewModel @Inject constructor(
     }
 
     private suspend fun seedChat(id: String) {
-        val msgs = runCatching { api.rideMessages(id) }.getOrDefault(emptyList())
+        // 1) Paint cached messages immediately so chat is usable offline.
+        val cached = messages.list(id)
         val meId = _state.value.meId
-        _state.value = _state.value.copy(
-            chat = msgs.map { it.toLine(meId) },
-        )
+        if (cached.isNotEmpty()) {
+            _state.value = _state.value.copy(
+                chat = cached.map { it.toLine(meId) },
+            )
+        }
+        // 2) Refresh from network; on success write through to Room.
+        val fresh = runCatching { api.rideMessages(id) }.getOrNull() ?: return
+        if (fresh.isNotEmpty()) {
+            messages.upsertAll(fresh.map { it.toEntity() })
+            _state.value = _state.value.copy(
+                chat = fresh.map { it.toLine(meId) },
+            )
+        }
     }
 
     private suspend fun seedMyRating(id: String, target: String?) {
@@ -236,6 +250,17 @@ class RideDetailViewModel @Inject constructor(
                                 )
                                 if (_state.value.chat.none { it.id == line.id && line.id.isNotBlank() }) {
                                     _state.value = _state.value.copy(chat = _state.value.chat + line)
+                                    if (line.id.isNotBlank() && rideId != null) {
+                                        messages.upsert(
+                                            MessageEntity(
+                                                id = line.id,
+                                                rideId = rideId!!,
+                                                senderId = line.from,
+                                                body = line.body,
+                                                createdAt = line.at,
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -313,4 +338,20 @@ private fun MessageOut.toLine(meId: String?): ChatLine = ChatLine(
     body = body,
     at = created_at,
     mine = meId != null && sender_id == meId,
+)
+
+private fun MessageOut.toEntity(): MessageEntity = MessageEntity(
+    id = id,
+    rideId = ride_id,
+    senderId = sender_id,
+    body = body,
+    createdAt = created_at,
+)
+
+private fun MessageEntity.toLine(meId: String?): ChatLine = ChatLine(
+    id = id,
+    from = senderId,
+    body = body,
+    at = createdAt,
+    mine = meId != null && senderId == meId,
 )
