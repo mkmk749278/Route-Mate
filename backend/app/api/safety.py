@@ -19,7 +19,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import redis.asyncio as redis
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -142,6 +142,7 @@ async def read_shared_ride(
 @limiter.limit("10/minute")
 async def report_incident(
     request: Request,
+    response: Response,
     ride_id: UUID,
     body: IncidentCreate,
     user_id: UUID = Depends(current_user_id),

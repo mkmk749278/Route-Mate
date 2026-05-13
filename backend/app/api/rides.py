@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from geoalchemy2 import Geometry
 from sqlalchemy import cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -117,6 +117,7 @@ async def _materialize_next_recurring(session: AsyncSession, ride: Ride) -> None
 @limiter.limit("60/minute")
 async def search_rides(
     request: Request,
+    response: Response,
     from_lat: float = Query(...),
     from_lng: float = Query(...),
     to_lat: float = Query(...),
