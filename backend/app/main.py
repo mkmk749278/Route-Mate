@@ -6,12 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth, bookings, devices, geocode, me, ratings, rides
 from app.core.config import settings
 from app.core.firebase import init_firebase
+from app.core.logging import RequestContextMiddleware, configure_logging
 from app.db.session import dispose_engine
 from app.ws.ride import router as ws_router
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    configure_logging()
     init_firebase()
     yield
     await dispose_engine()
@@ -19,6 +21,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="Route Mates API", version="0.1.0", lifespan=lifespan)
 
+app.add_middleware(RequestContextMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

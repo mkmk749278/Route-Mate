@@ -11,10 +11,12 @@ plugins {
 }
 
 // google-services.json is decoded from a GitHub secret only in the release
-// workflow. Apply the plugin lazily so debug / CI builds without the secret
-// still compile.
+// workflow. Apply both the google-services and the Crashlytics plugins
+// lazily so debug / CI builds without the secret still compile. Crashlytics
+// piggybacks on the same JSON, so guarding on the same file is correct.
 if (project.file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
 }
 
 val keystorePropsFile = rootProject.file("keystore.properties")
@@ -122,4 +124,5 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.crashlytics)
 }

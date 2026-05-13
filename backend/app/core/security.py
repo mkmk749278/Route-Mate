@@ -6,6 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 
 from app.core.config import settings
+from app.core.logging import user_id_var
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -35,4 +36,7 @@ async def current_user_id(
 ) -> UUID:
     if creds is None or creds.scheme.lower() != "bearer":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="missing token")
-    return decode_app_jwt(creds.credentials)
+    uid = decode_app_jwt(creds.credentials)
+    # Stamp the access log + any handler logs with the authenticated user.
+    user_id_var.set(str(uid))
+    return uid
