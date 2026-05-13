@@ -10,6 +10,7 @@ run the pure-Python tests (`test_recurrence`, `test_geocode`).
 """
 from __future__ import annotations
 
+import asyncio
 import os
 from collections.abc import AsyncIterator
 
@@ -61,23 +62,35 @@ async def _db_reachable() -> bool:
         await engine.dispose()
 
 
-@pytest_asyncio.fixture(scope="session")
-async def db_ready() -> bool:
-    """Run alembic once per session against the configured DATABASE_URL.
-
-    Returns True if the DB is reachable + migrated; False otherwise, so
-    DB-dependent tests can pytest.skip cleanly instead of erroring.
-    """
-    if not await _db_reachable():
-        return False
-
-    # Run migrations via the alembic Python API so we don't shell out.
+def _alembic_upgrade_head() -> None:
+    """Run `alembic upgrade head` synchronously. alembic's env.py calls
+    `asyncio.run(run_migrations_online())` — running that from inside an
+    already-running pytest-asyncio event loop raises 'cannot be called
+    from a running event loop'. Keeping this sync (and calling it from a
+    sync fixture) sidesteps the problem entirely."""
     from alembic import command
     from alembic.config import Config
 
     cfg = Config("alembic.ini")
     cfg.set_main_option("sqlalchemy.url", settings.database_url)
     command.upgrade(cfg, "head")
+
+
+@pytest.fixture(scope="session")
+def db_ready() -> bool:
+    """Run alembic once per session against the configured DATABASE_URL.
+
+    Returns True if the DB is reachable + migrated; False otherwise, so
+    DB-dependent tests can pytest.skip cleanly instead of erroring.
+
+    Sync on purpose: pytest-asyncio 0.23+ defaults the event loop scope
+    to "function", which makes a session-scoped *async* fixture
+    impossible without extra plumbing. The reachability probe itself
+    needs an event loop, so we drive it via asyncio.run.
+    """
+    if not asyncio.run(_db_reachable()):
+        return False
+    _alembic_upgrade_head()
     return True
 
 

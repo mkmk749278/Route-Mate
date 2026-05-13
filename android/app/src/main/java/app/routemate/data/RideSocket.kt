@@ -3,12 +3,12 @@ package app.routemate.data
 import android.util.Log
 import app.routemate.BuildConfig
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -85,11 +85,23 @@ class RideSocket @Inject constructor(
             .replaceFirst("http://", "ws://")
         val url = "$wsBase/v1/ws/ride/$rideId?token=$token"
 
-        @Volatile var current: WebSocket? = null
+        val currentRef = AtomicReference<WebSocket?>(null)
         val cancelled = AtomicBoolean(false)
-        lateinit var conn: RideConnection
+        // Build the RideConnection before the loop so the listener
+        // closure has a stable target the moment the first onMessage
+        // arrives.
+        val conn = RideConnection(
+            json = json,
+            socketRef = { currentRef.get() },
+            onClose = {
+                cancelled.set(true)
+                currentRef.getAndSet(null)?.cancel()
+            },
+        )
 
-        val loop: Job = scope.launch {
+        // The loop exits on its own when cancelled.set(true) is observed
+        // via RideConnection.close, so we don't need to retain the Job.
+        scope.launch {
             var delayMs = 1_000L
             while (!cancelled.get()) {
                 val ws = client.newWebSocket(
@@ -104,22 +116,23 @@ class RideSocket @Inject constructor(
                         }
                         override fun onFailure(ws: WebSocket, t: Throwable, r: Response?) {
                             Log.w("RideSocket", "ws failure: ${t.message}")
-                            if (current === ws) current = null
+                            currentRef.compareAndSet(ws, null)
                         }
                         override fun onClosed(ws: WebSocket, code: Int, reason: String) {
                             Log.i("RideSocket", "ws closed: $code $reason")
-                            if (current === ws) current = null
+                            currentRef.compareAndSet(ws, null)
                         }
                         override fun onClosing(ws: WebSocket, code: Int, reason: String) {
-                            if (current === ws) current = null
+                            currentRef.compareAndSet(ws, null)
                         }
                     }
                 )
-                current = ws
+                currentRef.set(ws)
 
-                // Wait for the listener to null out `current` on close /
-                // failure. Polling beats the no-future shape of OkHttp WS.
-                while (!cancelled.get() && current === ws) {
+                // Wait for the listener to null out `currentRef` on
+                // close / failure. Polling beats the no-future shape
+                // of OkHttp WS.
+                while (!cancelled.get() && currentRef.get() === ws) {
                     delay(500)
                 }
                 if (cancelled.get()) break
@@ -130,16 +143,6 @@ class RideSocket @Inject constructor(
             }
         }
 
-        conn = RideConnection(
-            json = json,
-            socketRef = { current },
-            onClose = {
-                cancelled.set(true)
-                current?.cancel()
-                current = null
-                loop.cancel()
-            },
-        )
         return conn
     }
 }
