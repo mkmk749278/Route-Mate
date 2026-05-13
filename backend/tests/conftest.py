@@ -20,11 +20,23 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import settings
+from app.services import routing
 
 # Auth router checks this at request time, so flipping it before any test
 # importing the app is enough for /auth/dev-login to succeed.
 os.environ.setdefault("DEV_LOGIN_ENABLED", "true")
 settings.dev_login_enabled = True
+
+
+# Tests shouldn't hit the live OSRM demo server on every ride.create —
+# short-circuit to "no polyline this time" so the search endpoint falls
+# back to its endpoint-radius behaviour. A dedicated routing test can
+# monkeypatch this back to a real implementation if it needs to.
+async def _noop_route(*_a, **_k):  # type: ignore[no-untyped-def]
+    return None
+
+
+routing.fetch_route = _noop_route  # type: ignore[assignment]
 
 
 _TABLES = ["fcm_tokens", "ratings", "messages", "bookings", "rides", "users"]

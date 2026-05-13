@@ -71,6 +71,9 @@ class Ride(Base):
     origin_label: Mapped[str] = mapped_column(String(200))
     destination_label: Mapped[str] = mapped_column(String(200))
     polyline: Mapped[str | None] = mapped_column(Text)
+    polyline_geom: Mapped[str | None] = mapped_column(
+        Geography("LINESTRING", srid=4326), nullable=True
+    )
     depart_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     seats_total: Mapped[int] = mapped_column(Integer)
     price_per_seat: Mapped[float] = mapped_column(Numeric(8, 2))

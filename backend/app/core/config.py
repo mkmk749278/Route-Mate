@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     nominatim_user_agent: str = Field(default="RouteMates/0.2 (contact@routemate.app)")
     geocode_cache_ttl_seconds: int = Field(default=7 * 24 * 3600)
     geocode_min_interval_ms: int = Field(default=1100)
+    # Phase 4-lite: routing engine for polyline-aware search. Defaults to
+    # the public OSRM demo; replace with a self-hosted instance for prod
+    # use (see ROADMAP.md Phase 4 self-host follow-up).
+    osrm_base_url: str = Field(default="https://router.project-osrm.org")
+    osrm_timeout_seconds: float = Field(default=8.0)
+    # Half-width of the "is this ride on my route?" band, in meters.
+    route_corridor_meters: int = Field(default=1500)
 
 
 @lru_cache

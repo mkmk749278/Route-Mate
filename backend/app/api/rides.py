@@ -2,14 +2,17 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from geoalchemy2 import Geometry
+from sqlalchemy import cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import BookingCreate, BookingOut, MessageOut, RatingOut, RideCreate, RideOut
+from app.core.config import settings as app_settings
 from app.core.security import current_user_id
 from app.db.models import Booking, BookingStatus, Message, Rating, Ride, RideStatus, User
 from app.db.session import get_session
 from app.services import notifications as notify
+from app.services import routing
 from app.services.geo import st_point
 from app.services.rides import ride_to_out, seats_taken
 
@@ -24,6 +27,16 @@ async def create_ride(
     user_id: UUID = Depends(current_user_id),
     session: AsyncSession = Depends(get_session),
 ) -> RideOut:
+    # Fetch the driving polyline once per ride. Failure is non-fatal —
+    # ride is still created, and /v1/rides/search falls back to the
+    # endpoint-radius behaviour for rides without polyline_geom.
+    route = await routing.fetch_route(
+        body.origin.lat, body.origin.lng, body.destination.lat, body.destination.lng
+    )
+    polyline_geom = (
+        func.ST_GeogFromText(route.as_wkt_linestring()) if route is not None else None
+    )
+
     ride = Ride(
         driver_id=user_id,
         origin=st_point(body.origin.lat, body.origin.lng),
@@ -31,6 +44,7 @@ async def create_ride(
         origin_label=body.origin_label,
         destination_label=body.destination_label,
         polyline=body.polyline,
+        polyline_geom=polyline_geom,
         depart_at=body.depart_at,
         seats_total=body.seats_total,
         price_per_seat=body.price_per_seat,
@@ -88,6 +102,7 @@ async def _materialize_next_recurring(session: AsyncSession, ride: Ride) -> None
         origin_label=ride.origin_label,
         destination_label=ride.destination_label,
         polyline=ride.polyline,
+        polyline_geom=ride.polyline_geom,
         depart_at=next_depart,
         seats_total=ride.seats_total,
         price_per_seat=ride.price_per_seat,
@@ -115,13 +130,34 @@ async def search_rides(
     me = await session.get(User, user_id)
     my_blocks: list[UUID] = list((me.blocked_user_ids or []) if me else [])
 
+    # Phase 4-lite: prefer corridor (LINESTRING-aware) match if the ride
+    # has a polyline_geom, fall back to endpoint-radius otherwise. The
+    # direction guard via ST_LineLocatePoint stops us from showing rides
+    # going the wrong way along the route. ST_LineLocatePoint is a
+    # geometry-space operator, so we cast Geography → Geometry first.
+    corridor = app_settings.route_corridor_meters
+    line_geom = cast(Ride.polyline_geom, Geometry)
+    origin_geom = cast(origin_pt, Geometry)
+    dest_geom = cast(dest_pt, Geometry)
+    polyline_match = (
+        Ride.polyline_geom.isnot(None)
+        & func.ST_DWithin(Ride.polyline_geom, origin_pt, corridor)
+        & func.ST_DWithin(Ride.polyline_geom, dest_pt, corridor)
+        & (
+            func.ST_LineLocatePoint(line_geom, origin_geom)
+            < func.ST_LineLocatePoint(line_geom, dest_geom)
+        )
+    )
+    endpoint_match = (
+        Ride.polyline_geom.is_(None)
+        & func.ST_DWithin(Ride.origin, origin_pt, radius_m)
+        & func.ST_DWithin(Ride.destination, dest_pt, radius_m)
+    )
+
     stmt = (
         select(Ride)
-        .where(
-            Ride.status == RideStatus.scheduled,
-            func.ST_DWithin(Ride.origin, origin_pt, radius_m),
-            func.ST_DWithin(Ride.destination, dest_pt, radius_m),
-        )
+        .where(Ride.status == RideStatus.scheduled)
+        .where(polyline_match | endpoint_match)
         .order_by(Ride.depart_at.asc())
         .limit(50)
     )
