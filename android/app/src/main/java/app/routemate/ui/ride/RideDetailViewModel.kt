@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.routemate.data.AuthStore
 import app.routemate.data.BookingOut
+import app.routemate.data.IncidentCreate
 import app.routemate.data.LatLng
 import app.routemate.data.MessageOut
 import app.routemate.data.RatingCreate
@@ -278,6 +279,25 @@ class RideDetailViewModel @Inject constructor(
                     RideLocationService.stop(ctx)
                 }
                 .onFailure { _state.value = _state.value.copy(busy = false, error = it.message) }
+        }
+    }
+
+    /** Build a share URL the user can paste into SMS / WhatsApp. */
+    suspend fun createShareUrl(): String? {
+        val id = rideId ?: return null
+        val tok = runCatching { api.createShareToken(id) }.getOrNull() ?: return null
+        val base = app.routemate.BuildConfig.API_BASE_URL.trimEnd('/')
+        return "$base/v1/share/${tok.token}"
+    }
+
+    fun reportSos() {
+        val id = rideId ?: return
+        viewModelScope.launch {
+            runCatching {
+                api.reportIncident(id, IncidentCreate(kind = "sos", description = "panic button"))
+            }.onFailure {
+                _state.value = _state.value.copy(error = it.message)
+            }
         }
     }
 

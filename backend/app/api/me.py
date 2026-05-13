@@ -53,6 +53,8 @@ async def patch_me(
         user.photo_url = body.photo_url
     if body.upi_id is not None:
         user.upi_id = body.upi_id.strip() or None
+    if body.trusted_contacts is not None:
+        user.trusted_contacts = [c.model_dump() for c in body.trusted_contacts]
     await session.commit()
     await session.refresh(user)
     return MeOut.model_validate(user)

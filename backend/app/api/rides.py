@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import BookingCreate, BookingOut, MessageOut, RatingOut, RideCreate, RideOut
 from app.core.security import current_user_id
-from app.db.models import Booking, BookingStatus, Message, Rating, Ride, RideStatus
+from app.db.models import Booking, BookingStatus, Message, Rating, Ride, RideStatus, User
 from app.db.session import get_session
 from app.services import notifications as notify
 from app.services.geo import st_point
@@ -106,10 +106,14 @@ async def search_rides(
     depart_after: datetime | None = None,
     depart_before: datetime | None = None,
     radius_m: int = Query(SEARCH_RADIUS_METERS, ge=100, le=10000),
+    user_id: UUID = Depends(current_user_id),
     session: AsyncSession = Depends(get_session),
 ) -> list[RideOut]:
     origin_pt = st_point(from_lat, from_lng)
     dest_pt = st_point(to_lat, to_lng)
+
+    me = await session.get(User, user_id)
+    my_blocks: list[UUID] = list((me.blocked_user_ids or []) if me else [])
 
     stmt = (
         select(Ride)
@@ -125,6 +129,16 @@ async def search_rides(
         stmt = stmt.where(Ride.depart_at >= depart_after)
     if depart_before is not None:
         stmt = stmt.where(Ride.depart_at <= depart_before)
+    if my_blocks:
+        stmt = stmt.where(Ride.driver_id.notin_(my_blocks))
+    # Also drop rides whose driver has blocked the caller.
+    blocking_me = (
+        await session.execute(
+            select(User.id).where(User.blocked_user_ids.any(user_id))  # type: ignore[arg-type]
+        )
+    ).scalars().all()
+    if blocking_me:
+        stmt = stmt.where(Ride.driver_id.notin_(blocking_me))
 
     rides = (await session.execute(stmt)).scalars().all()
     out: list[RideOut] = []
@@ -162,6 +176,14 @@ async def create_booking(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="driver cannot book")
     if ride.status != RideStatus.scheduled:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="ride not bookable")
+
+    # Refuse if either party has blocked the other.
+    me = await session.get(User, user_id)
+    driver = await session.get(User, ride.driver_id)
+    if (me and ride.driver_id in (me.blocked_user_ids or [])) or (
+        driver and user_id in (driver.blocked_user_ids or [])
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="blocked")
 
     existing = (
         await session.execute(
