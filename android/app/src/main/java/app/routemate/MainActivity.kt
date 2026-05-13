@@ -1,5 +1,6 @@
 package app.routemate
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -16,19 +17,37 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import app.routemate.ui.RootNav
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private val pendingRideId = MutableStateFlow<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        pendingRideId.value = rideIdFromIntent(intent)
         setContent {
             RouteMatesTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    RootNav()
+                    RootNav(pendingRideIdFlow = pendingRideId)
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        rideIdFromIntent(intent)?.let { pendingRideId.value = it }
+    }
+
+    /** routemate://ride/{id} — last path segment is the ride id. */
+    private fun rideIdFromIntent(intent: Intent?): String? {
+        val uri = intent?.data ?: return null
+        if (uri.scheme != "routemate" || uri.host != "ride") return null
+        return uri.lastPathSegment
     }
 }
 

@@ -9,6 +9,7 @@ from app.api.schemas import BookingCreate, BookingOut, MessageOut, RatingOut, Ri
 from app.core.security import current_user_id
 from app.db.models import Booking, BookingStatus, Message, Rating, Ride, RideStatus
 from app.db.session import get_session
+from app.services import notifications as notify
 from app.services.geo import st_point
 from app.services.rides import ride_to_out, seats_taken
 
@@ -181,6 +182,18 @@ async def create_booking(
     session.add(booking)
     await session.commit()
     await session.refresh(booking)
+
+    await notify.notify_user(
+        session,
+        ride.driver_id,
+        kind=notify.KIND_BOOKING_CREATED,
+        title="New booking",
+        body=(
+            f"{body.seats} seat(s) booked on your "
+            f"{ride.origin_label} → {ride.destination_label} ride."
+        ),
+        data={"ride_id": str(ride_id), "booking_id": str(booking.id)},
+    )
     return BookingOut.model_validate(booking)
 
 
@@ -198,6 +211,23 @@ async def start_ride(
     ride.status = RideStatus.started
     await session.commit()
     await session.refresh(ride)
+
+    accepted = (
+        await session.execute(
+            select(Booking.rider_id).where(
+                Booking.ride_id == ride_id, Booking.status == BookingStatus.accepted
+            )
+        )
+    ).scalars().all()
+    for rider_id in accepted:
+        await notify.notify_user(
+            session,
+            rider_id,
+            kind=notify.KIND_RIDE_STARTED,
+            title="Your driver is on the way",
+            body=f"{ride.origin_label} → {ride.destination_label}",
+            data={"ride_id": str(ride_id)},
+        )
     return ride_to_out(ride, await seats_taken(session, ride.id))
 
 
@@ -299,6 +329,16 @@ async def cancel_ride(
         b.status = BookingStatus.cancelled
     await session.commit()
     await session.refresh(ride)
+
+    for b in bookings:
+        await notify.notify_user(
+            session,
+            b.rider_id,
+            kind=notify.KIND_RIDE_CANCELLED,
+            title="Ride cancelled",
+            body=f"Your driver cancelled the {ride.origin_label} → {ride.destination_label} ride.",
+            data={"ride_id": str(ride_id)},
+        )
     return ride_to_out(ride, await seats_taken(session, ride.id))
 
 

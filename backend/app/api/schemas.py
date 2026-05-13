@@ -140,3 +140,19 @@ class MessageOut(BaseModel):
     sender_id: UUID
     body: str
     created_at: datetime
+
+
+class UserSettingsOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    quiet_start_hour: int | None = None
+    quiet_end_hour: int | None = None
+    muted_kinds: list[str] = []
+
+
+class UserSettingsPatch(BaseModel):
+    quiet_start_hour: int | None = Field(default=None, ge=0, le=23)
+    quiet_end_hour: int | None = Field(default=None, ge=0, le=23)
+    muted_kinds: list[str] | None = None
+    # Sentinel: explicitly clear quiet hours by sending both as null. We
+    # distinguish "unset" (field absent) from "set to null" by checking the
+    # raw model via model_fields_set.

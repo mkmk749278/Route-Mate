@@ -13,6 +13,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -30,6 +31,8 @@ import app.routemate.ui.profile.ProfileScreen
 import app.routemate.ui.ride.RideDetailScreen
 import app.routemate.ui.signin.SignInScreen
 import app.routemate.ui.trips.TripsScreen
+import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.flow.MutableStateFlow
 
 private sealed class Tab(val route: String, val labelRes: Int) {
     data object Find : Tab("find", R.string.tab_find)
@@ -41,11 +44,25 @@ private sealed class Tab(val route: String, val labelRes: Int) {
 private val TABS = listOf(Tab.Find, Tab.Offer, Tab.Trips, Tab.Profile)
 
 @Composable
-fun RootNav() {
+fun RootNav(
+    pendingRideIdFlow: MutableStateFlow<String?> = MutableStateFlow(null),
+) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route ?: Tab.Find.route
     val showBar = TABS.any { it.route == currentRoute }
+
+    // Notification deeplinks (routemate://ride/{id}) land here. Wait until
+    // we're off the sign-in screen so a signed-out user actually authenticates
+    // first; clear the flow after navigating to make this idempotent.
+    val pendingRideId by pendingRideIdFlow.collectAsState()
+    LaunchedEffect(pendingRideId, currentRoute) {
+        val id = pendingRideId ?: return@LaunchedEffect
+        if (currentRoute != "signin") {
+            nav.navigate("ride/$id")
+            pendingRideIdFlow.value = null
+        }
+    }
 
     Scaffold(
         bottomBar = {

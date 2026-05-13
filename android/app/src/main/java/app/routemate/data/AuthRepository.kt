@@ -1,7 +1,9 @@
 package app.routemate.data
 
+import android.util.Log
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.messaging.FirebaseMessaging
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.tasks.await
@@ -11,6 +13,14 @@ class AuthRepository @Inject constructor(
     private val api: RouteMatesApi,
     private val store: AuthStore,
 ) {
+
+    private suspend fun registerCurrentFcmToken() {
+        if (!firebaseAvailable()) return
+        runCatching {
+            val token = FirebaseMessaging.getInstance().token.await() ?: return
+            api.registerFcm(FcmRegister(token = token))
+        }.onFailure { Log.w("AuthRepository", "FCM register failed", it) }
+    }
     /**
      * v0.1 dev login. Backend upserts a user keyed by phone and returns
      * an app JWT. Used when Firebase isn't configured for this build.
@@ -18,6 +28,7 @@ class AuthRepository @Inject constructor(
     suspend fun devLogin(phone: String, name: String? = null): MeOut {
         val res = api.devLogin(DevLoginRequest(phone = phone, name = name))
         store.setToken(res.token)
+        registerCurrentFcmToken()
         return res.user
     }
 
@@ -33,6 +44,7 @@ class AuthRepository @Inject constructor(
             ?: error("No Firebase ID token")
         val res = api.exchange(AuthExchange(id_token = idToken))
         store.setToken(res.token)
+        registerCurrentFcmToken()
         return res.user
     }
 

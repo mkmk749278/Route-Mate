@@ -8,6 +8,7 @@ from app.api.schemas import BookingOut
 from app.core.security import current_user_id
 from app.db.models import Booking, BookingStatus, Ride
 from app.db.session import get_session
+from app.services import notifications as notify
 
 router = APIRouter()
 
@@ -58,6 +59,13 @@ async def accept(
     b = await _transition(
         session, booking_id, user_id, BookingStatus.accepted, actor_must_be_driver=True
     )
+    await notify.notify_user(
+        session, b.rider_id,
+        kind=notify.KIND_BOOKING_ACCEPTED,
+        title="Booking accepted",
+        body="The driver accepted your booking. Open the ride for details.",
+        data={"ride_id": str(b.ride_id), "booking_id": str(b.id)},
+    )
     return BookingOut.model_validate(b)
 
 
@@ -69,6 +77,13 @@ async def reject(
 ) -> BookingOut:
     b = await _transition(
         session, booking_id, user_id, BookingStatus.rejected, actor_must_be_driver=True
+    )
+    await notify.notify_user(
+        session, b.rider_id,
+        kind=notify.KIND_BOOKING_REJECTED,
+        title="Booking declined",
+        body="The driver couldn't accept your booking. Try a different ride.",
+        data={"ride_id": str(b.ride_id), "booking_id": str(b.id)},
     )
     return BookingOut.model_validate(b)
 
@@ -82,4 +97,14 @@ async def cancel(
     b = await _transition(
         session, booking_id, user_id, BookingStatus.cancelled, actor_must_be_driver=False
     )
+    # Notify the driver that a rider cancelled their seat.
+    ride = await session.get(Ride, b.ride_id)
+    if ride is not None:
+        await notify.notify_user(
+            session, ride.driver_id,
+            kind=notify.KIND_BOOKING_CANCELLED,
+            title="Rider cancelled",
+            body="A booked rider cancelled their seat on your ride.",
+            data={"ride_id": str(b.ride_id), "booking_id": str(b.id)},
+        )
     return BookingOut.model_validate(b)
