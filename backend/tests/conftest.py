@@ -39,6 +39,13 @@ async def _noop_route(*_a, **_k):  # type: ignore[no-untyped-def]
 routing.fetch_route = _noop_route  # type: ignore[assignment]
 
 
+# Disable rate limiting in tests — many tests legitimately fire 10+
+# auth/dev-login calls in quick succession to construct fixtures.
+from app.core.ratelimit import limiter as _rl  # noqa: E402
+
+_rl.enabled = False
+
+
 _TABLES = ["fcm_tokens", "ratings", "messages", "bookings", "rides", "users"]
 
 

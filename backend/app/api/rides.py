@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from geoalchemy2 import Geometry
 from sqlalchemy import cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import BookingCreate, BookingOut, MessageOut, RatingOut, RideCreate, RideOut
 from app.core.config import settings as app_settings
+from app.core.ratelimit import limiter
 from app.core.security import current_user_id
 from app.db.models import Booking, BookingStatus, Message, Rating, Ride, RideStatus, User
 from app.db.session import get_session
@@ -113,7 +114,9 @@ async def _materialize_next_recurring(session: AsyncSession, ride: Ride) -> None
 
 
 @router.get("/search", response_model=list[RideOut])
+@limiter.limit("60/minute")
 async def search_rides(
+    request: Request,
     from_lat: float = Query(...),
     from_lng: float = Query(...),
     to_lat: float = Query(...),

@@ -3,11 +3,15 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api import auth, bookings, devices, geocode, me, ratings, rides, safety
 from app.core.config import settings
 from app.core.firebase import init_firebase
 from app.core.logging import RequestContextMiddleware, configure_logging
+from app.core.metrics import PrometheusMiddleware, metrics_response
+from app.core.ratelimit import limiter
 from app.db.session import dispose_engine
 from app.services import anomaly
 from app.ws.ride import router as ws_router
@@ -31,6 +35,16 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="Route Mates API", version="0.1.0", lifespan=lifespan)
 
+app.state.limiter = limiter
+app.add_exception_handler(
+    RateLimitExceeded,
+    lambda request, exc: __import__("fastapi").responses.JSONResponse(  # type: ignore[no-any-return]
+        status_code=429, content={"detail": "rate limit exceeded"}
+    ),
+)
+
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RequestContextMiddleware)
 app.add_middleware(
     CORSMiddleware,
@@ -44,6 +58,11 @@ app.add_middleware(
 @app.get("/v1/health")
 async def health() -> dict:
     return {"ok": True, "service": "routemate-api"}
+
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics():  # type: ignore[no-untyped-def]
+    return metrics_response()
 
 
 app.include_router(auth.router, prefix="/v1/auth", tags=["auth"])

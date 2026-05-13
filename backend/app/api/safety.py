@@ -19,7 +19,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import redis.asyncio as redis
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,6 +32,7 @@ from app.api.schemas import (
     ShareTokenOut,
 )
 from app.core.config import settings
+from app.core.ratelimit import limiter
 from app.core.security import current_user_id
 from app.db.models import Booking, BookingStatus, Incident, Ride, ShareToken, User
 from app.db.session import get_session
@@ -138,7 +139,9 @@ async def read_shared_ride(
     response_model=IncidentOut,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("10/minute")
 async def report_incident(
+    request: Request,
     ride_id: UUID,
     body: IncidentCreate,
     user_id: UUID = Depends(current_user_id),
