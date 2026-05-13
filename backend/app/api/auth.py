@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +23,7 @@ class DevLoginRequest(BaseModel):
 @limiter.limit("10/minute")
 async def dev_login(
     request: Request,
+    response: Response,
     body: DevLoginRequest,
     session: AsyncSession = Depends(get_session),
 ) -> AuthResult:
@@ -57,6 +58,7 @@ async def dev_login(
 @limiter.limit("10/minute")
 async def exchange(
     request: Request,
+    response: Response,
     body: AuthExchange,
     session: AsyncSession = Depends(get_session),
 ) -> AuthResult:
